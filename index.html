@@ -12,7 +12,8 @@
 
 <section class="panel">
   <h2>0. On-device model (Gemini Nano via Firebase AI Logic)</h2>
-  <div id="modelStatus">Not prepared</div>
+  <div id="modelStatus">State: Not prepared (미준비)</div>
+  <p class="note">Lifecycle: Not prepared → Downloading (progress below) → Ready. If this profile cannot run the on-device model, this panel says so explicitly and classification is blocked before any cloud call. You may type a memo before the model is ready; classification waits for the model or fails explicitly — it never falls back to the cloud.</p>
   <button id="prepareBtn">1. Prepare on-device model (download if needed)</button>
   <span id="downloadProgress"></span>
   <p class="note">Diagnostic only: <code>LanguageModel.availability()</code> = <span id="diagAvail">not checked</span>
@@ -60,6 +61,7 @@
   <button id="letterBtn" disabled>4. Generate letter in cloud (ONLY_IN_CLOUD, explicit model)</button>
   <div id="letterOut"></div>
   <button id="copyLetterBtn" disabled>Copy letter</button>
+  <button id="exportLetterBtn">Download letter (.txt)</button>
 </section>
 
 <section class="panel">

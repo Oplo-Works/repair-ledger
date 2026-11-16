@@ -20,6 +20,18 @@ const classifySchema = Schema.object({
   },
 });
 
+// Schema B (Day-2 comparison candidate): category + summary only. Date/location stay UI-primary;
+// measured Schema-A suggestions were non-ISO ("Monday morning") or duplicates of the UI inputs.
+const classifySchemaMinimal = Schema.object({
+  properties: {
+    category: Schema.enumString({ enum: [...CATEGORIES] }),
+    summary: Schema.string(),
+  },
+});
+// Adopted 2026-11-16 (Day-2 A3): "minimal" beat "full" on the same 10 memos (warm median 4,712 vs 6,680 ms,
+// equal-or-better categories, and no non-ISO suggestion junk). "full" remains only for reproducing the comparison.
+export const LOCAL_SCHEMA_VARIANT = (import.meta.env.VITE_LOCAL_SCHEMA as string | undefined) || "minimal";
+
 const letterSchema = Schema.object({
   properties: {
     sentences: Schema.array({
@@ -46,7 +58,7 @@ export function getLocalModel(): GenerativeModel {
         expectedInputs: [{ type: "text", languages: ["en"] }],
         expectedOutputs: [{ type: "text", languages: ["en"] }],
       },
-      promptOptions: { responseConstraint: classifySchema },
+      promptOptions: { responseConstraint: LOCAL_SCHEMA_VARIANT === "minimal" ? classifySchemaMinimal : classifySchema },
     },
   });
   return localModel;
@@ -68,8 +80,7 @@ export async function classifyOnDevice(rawText: string): Promise<ClassifyResult>
   const t0 = performance.now();
   const result = await getLocalModel().generateContent(
     `Classify this NYC tenant repair memo into exactly one category (heating, water_leak, mold, pest, unknown). ` +
-    `Use "unknown" if it does not clearly fit — never force a category. Write a one-sentence factual summary using ONLY facts in the memo. ` +
-    `suggestedOccurredOn/suggestedLocation: copy only if explicitly stated, else "". Memo:\n"""${rawText}"""`,
+    `Use "unknown" if it does not clearly fit — never force a category. Write a one-sentence factual summary using ONLY facts in the memo. Memo:\n"""${rawText}"""`,
   );
   const latencyMs = Math.round(performance.now() - t0);
   const source = result.response.inferenceSource;
