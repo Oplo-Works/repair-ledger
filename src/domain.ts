@@ -79,6 +79,18 @@ export function validateLetter(sentences: LetterSentence[], records: RepairRecor
   return bad.size ? { ok: false, reason: "Cited record missing or not Confirmed", badIds: [...bad] } : { ok: true };
 }
 
+/**
+ * No-silent-fallback guard. Measured SDK behavior (firebase 13.3.0, @firebase/ai dist index.esm.js:1224-1231, 2562-2566):
+ * if `LanguageModel` is absent the SDK creates no ChromeAdapter and callCloudOrDevice() calls the cloud
+ * even for ONLY_ON_DEVICE. So the app must refuse BEFORE any generateContent() call.
+ */
+export function assertOnDeviceCapable(hasLanguageModel: boolean, availability: string | null): void {
+  if (!hasLanguageModel)
+    throw new Error("On-device model unavailable: Chrome Prompt API (LanguageModel) not present in this browser/profile. Request was NOT sent to the cloud (no silent fallback).");
+  if (availability === "unavailable")
+    throw new Error("On-device model unavailable: LanguageModel.availability() = 'unavailable' in this profile. Request was NOT sent to the cloud (no silent fallback).");
+}
+
 /** A letter must be invalidated when any record it cites is edited or deleted. */
 export function letterNeedsInvalidation(letter: Letter, changedRecordId: string): boolean {
   return letter.status === "Valid" && letter.sentences.some((s) => s.sourceRecordIds.includes(changedRecordId));

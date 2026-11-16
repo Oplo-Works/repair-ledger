@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canTransition, applyEdit, sortTimeline, validateLetter, letterNeedsInvalidation, type RepairRecord, type Letter } from "./domain";
+import { canTransition, applyEdit, sortTimeline, validateLetter, letterNeedsInvalidation, assertOnDeviceCapable, type RepairRecord, type Letter } from "./domain";
 
 const rec = (over: Partial<RepairRecord> = {}): RepairRecord => ({
   id: "r1", rawText: "No heat since Monday", aiText: null, confirmedText: null,
@@ -41,6 +41,19 @@ describe("letter ID contract", () => {
   });
   it("fails on uncited sentence", () => {
     expect(validateLetter([{ text: "x", sourceRecordIds: [] }], [rec()]).ok).toBe(false);
+  });
+});
+
+describe("no silent fallback guard (SDK adapter-absence behavior)", () => {
+  it("blocks before any call when LanguageModel is absent — even though SDK would cloud-call", () => {
+    expect(() => assertOnDeviceCapable(false, null)).toThrow(/NOT sent to the cloud/);
+  });
+  it("blocks when availability is unavailable", () => {
+    expect(() => assertOnDeviceCapable(true, "unavailable")).toThrow(/NOT sent to the cloud/);
+  });
+  it("allows downloadable/available (success is still proven by inferenceSource afterwards)", () => {
+    expect(() => assertOnDeviceCapable(true, "downloadable")).not.toThrow();
+    expect(() => assertOnDeviceCapable(true, "available")).not.toThrow();
   });
 });
 

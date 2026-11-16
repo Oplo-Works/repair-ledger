@@ -1,6 +1,13 @@
 import { getAI, getGenerativeModel, GoogleAIBackend, InferenceMode, InferenceSource, Schema, type GenerativeModel } from "firebase/ai";
 import { getApp, CLOUD_MODEL } from "./firebase";
-import { CATEGORIES, validateLetter, type Category, type LetterSentence, type RepairRecord } from "./domain";
+import { CATEGORIES, validateLetter, assertOnDeviceCapable, type Category, type LetterSentence, type RepairRecord } from "./domain";
+
+async function guardOnDevice() {
+  const lm = (globalThis as { LanguageModel?: { availability(): Promise<string> } }).LanguageModel;
+  let avail: string | null = null;
+  if (lm) { try { avail = await lm.availability(); } catch { avail = null; } }
+  assertOnDeviceCapable(!!lm, avail);
+}
 
 // Local step: ONLY_ON_DEVICE is forced. If the on-device model is unavailable the SDK throws.
 // There is NO silent cloud fallback anywhere in this file for the local step.
@@ -47,6 +54,7 @@ export function getLocalModel(): GenerativeModel {
 
 /** Must be called from a user gesture (button click). Downloads the Nano model on first use. */
 export async function prepareDeviceModel(onProgress: (pct: number) => void): Promise<void> {
+  await guardOnDevice();
   await getLocalModel().initializeDeviceModel((v) => onProgress(Math.round(v * 100)));
 }
 
@@ -56,6 +64,7 @@ export interface ClassifyResult {
 }
 
 export async function classifyOnDevice(rawText: string): Promise<ClassifyResult> {
+  await guardOnDevice(); // must precede generateContent: without it the SDK silently cloud-calls when LanguageModel is absent
   const t0 = performance.now();
   const result = await getLocalModel().generateContent(
     `Classify this NYC tenant repair memo into exactly one category (heating, water_leak, mold, pest, unknown). ` +
@@ -68,7 +77,13 @@ export async function classifyOnDevice(rawText: string): Promise<ClassifyResult>
   if (source !== InferenceSource.ON_DEVICE)
     throw new Error(`On-device verification failed: inferenceSource=${String(source)} (expected ${InferenceSource.ON_DEVICE}). No fallback was used.`);
   const rawAiText = result.response.text();
-  const parsed = JSON.parse(rawAiText) as { category: Category; summary: string; suggestedOccurredOn: string; suggestedLocation: string };
+  console.log("[classify] inferenceSource=", source, "latencyMs=", latencyMs, "raw=", rawAiText);
+  let parsed: { category: Category; summary: string; suggestedOccurredOn: string; suggestedLocation: string };
+  try {
+    parsed = JSON.parse(rawAiText);
+  } catch {
+    throw new Error(`Structured-output parse failed (inferenceSource=${source}, latencyMs=${latencyMs}). Raw response: ${rawAiText.slice(0, 500)}`);
+  }
   if (!CATEGORIES.includes(parsed.category)) throw new Error(`Invalid category from model: ${String(parsed.category)}`);
   return {
     category: parsed.category, summary: parsed.summary,
