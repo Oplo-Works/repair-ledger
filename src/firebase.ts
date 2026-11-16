@@ -12,7 +12,7 @@ const cfg = {
 };
 
 export const configMissing = !cfg.apiKey || !cfg.projectId || !cfg.appId;
-export const CLOUD_MODEL = (import.meta.env.VITE_CLOUD_MODEL as string | undefined) || "gemini-3.8-flash";
+export const CLOUD_MODEL = (import.meta.env.VITE_CLOUD_MODEL as string | undefined) || "gemini-3.5-flash-lite";
 
 let app: FirebaseApp | null = null;
 export let auth: Auth | null = null;

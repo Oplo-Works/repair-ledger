@@ -31,7 +31,7 @@ async function renderEnv() {
   el.diagAvail.textContent = avail;
   const unsupported = !lm || avail === "unavailable";
   el.env.innerHTML =
-    `<b>Environment:</b> ${navigator.userAgent} · online=${navigator.onLine} · Firebase config ${configMissing ? "<b>MISSING (.env.local)</b> — saving/letter disabled, this is a config state, not an unsupported-device result" : "present"} · App Check ${appCheckConfigured ? "configured (reCAPTCHA v3)" : "not configured"} · cloud model (explicit) = <code>${CLOUD_MODEL}</code>` +
+    `<b>Environment:</b> ${navigator.userAgent} · online=${navigator.onLine} · Firebase config ${configMissing ? "<b>MISSING (.env.local)</b> — saving/letter disabled, this is a config state, not an unsupported-device result" : "present"} · App Check ${appCheckConfigured ? "configured (reCAPTCHA Enterprise)" : "not configured"} · cloud model (explicit) = <code>${CLOUD_MODEL}</code>` +
     (unsupported
       ? `<p class="warn"><b>On-device AI is not available in this profile.</b> This is the expected result for a profile without the official setup. To use on-device inference: Chrome 139+ on desktop, enable <code>chrome://flags/#prompt-api-for-gemini-nano-multimodal-input</code>, restart Chrome, then prepare the model below. No cloud fallback will be used silently.</p>`
       : "");
@@ -108,9 +108,18 @@ el.classifyBtn.addEventListener("click", async () => {
     status: "Processing", inferenceSource: null, latencyMs: null, createdAt: Date.now(),
   };
   current = rec;
+  // Latency branch (measured 7–10s warm, 16–24s cold): strengthen progress UI instead of changing the pipeline.
+  const started = Date.now();
   el.classifyResult.textContent = modelReady ? "Running on-device…" : "Model not marked ready — attempting ONLY_ON_DEVICE call anyway (it will throw if unavailable, no fallback).";
+  const timer = setInterval(() => {
+    el.classifyResult.textContent = `Running on-device… ${Math.round((Date.now() - started) / 1000)}s (first call in a new profile/origin can take ~20s; no cloud fallback is running)`;
+  }, 1000);
+  try { await classifyOnce(rec); } finally { clearInterval(timer); }
+});
+
+async function classifyOnce(rec: RepairRecord) {
   try {
-    const r = await classifyOnDevice(rawText);
+    const r = await classifyOnDevice(rec.rawText);
     Object.assign(rec, { aiText: r.rawAiText, confirmedText: r.summary, category: r.category, suggestedOccurredOn: r.suggestedOccurredOn, suggestedLocation: r.suggestedLocation, inferenceSource: r.inferenceSource, latencyMs: r.latencyMs, status: "Needs Review" });
     el.classifyResult.innerHTML = `On-device result ${badge(r)}<br/>Category: <b>${r.category}</b> (use “unknown / Needs Review” freely — never forced)`;
   } catch (e) {
@@ -118,7 +127,7 @@ el.classifyBtn.addEventListener("click", async () => {
     el.classifyResult.innerHTML = `<span class="warn">On-device classification failed: ${String(e)}<br/>Raw text preserved as “Needs Review”. No silent cloud fallback was used.</span>`;
   }
   renderReview();
-});
+}
 
 // ---- step 2: review / confirm / save (Consent 1) ----
 function renderReview() {

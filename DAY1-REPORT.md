@@ -1,41 +1,29 @@
-# Day-1 Report — 2026-11-16 (Gate deadline: 11/15 night per BUILD-PLAN v2.1; measured 11/16)
+# Day-1 Report — 2026-11-16 final (Gate deadline: 11/15 night per BUILD-PLAN v2.1)
 
-## Verdict: STOP gate not cleared — blocked on Firebase project creation (owner action)
-The vertical flow cannot be measured until a Firebase project exists. No gate below is marked passed on skeleton/diagnostic evidence. Code for the flow is built and unit-tested locally; all Firebase-dependent gates remain **blocked**, not passed.
-
-Repo: https://github.com/Oplo-Works/repair-ledger (public, Apache-2.0 detected by GitHub API)
-Deployed URL: **none yet** (no Firebase project → no Hosting).
+## Verdict: Gate cleared on the deployed URL — with two documented exceptions in §Notes
+The full vertical flow was measured end-to-end on https://repair-ledger-6faaa.web.app in real Chrome 157. Repo: https://github.com/Oplo-Works/repair-ledger (public, Apache-2.0).
 
 ## Gate table (0–6)
 | Gate | Result | Measured evidence |
 |---|---|---|
-| 0. Devpost Rules read directly | **PASS** | Rules read in full at firebasehybridaihackathon.devpost.com/rules on 2026-11-16. Cross-check below. |
-| 1. ONLY_ON_DEVICE real SDK call, `inferenceSource === ON_DEVICE` | **BLOCKED** | No Firebase project/config exists on this machine (no `.env.local`, no firebase CLI, empty workspace at start). Only diagnostic measured: `LanguageModel.availability()="downloadable"` in OpenCode's built-in Chromium 152 — explicitly **not** counted (plan: availability is not the criterion; also wrong browser/profile vs user's Chrome 157). |
-| 2. Deployed-URL vertical flow (local 1 → confirm/save → cloud 1 → citation trace) | **BLOCKED** | Code complete locally (`src/ai.ts`, `src/main.ts`), build passes, 9 unit tests pass. No deployed URL exists, so per plan this is not a pass. |
-| 3. App Check production (deployed domain, fresh profile, console enforcement) | **BLOCKED** | No project/domain yet. Code wires reCAPTCHA v3 provider; debug provider only on localhost + explicit local env opt-in, no token committed (secret scan: only prose mentions, no keys). |
-| 4. Clean-profile criteria split | **PARTIAL (code-verified, not measured in user's Chrome)** | UI distinguishes three states measured locally with console errors = 0: config-missing (≠ unsupported), on-device unavailable → explicit unsupported guidance with official flag procedure, and (pending) on-device success. User's Chrome 157 clean/supported profiles not yet measured. |
-| 5. Minimal offline experiment | **BLOCKED** | Depends on Gate 1 model readiness. Firestore persistent local cache is the single save path in code; no offline inference measured. |
-| 6. Explicit cloud model + 1 synthesis, ID contract | **PARTIAL (code)** | Model explicitly named `gemini-3.8-flash` in `src/ai.ts`/`VITE_CLOUD_MODEL` (not the SDK default `gemini-3.5-flash-lite`); sentence-array `{text, sourceRecordIds[]}` validation in `src/domain.ts:validateLetter()` with unit tests (hallucinated ID → whole letter fails, no auto-retry). Synthesis itself not run — no project. |
+| 0. Devpost Rules read directly | **PASS** | Rules read in full (firebasehybridaihackathon.devpost.com/rules). Deadline 11/30 5:00 PM ET = §4 2:00 PM PT — consistent with plan. Public repo + Apache-2.0 (GitHub API-detected), runtime hybrid calls in `src/ai.ts`, English-primary UI. Eligibility confirmed by user. |
+| 1. ONLY_ON_DEVICE real SDK call | **PASS** | Chrome 157.0.8103.79, fresh profile (flags enabled): download 0→100%, `LanguageModel.availability()` downloadable→available, `generateContent` with `ONLY_ON_DEVICE` returned **`inferenceSource=on_device`** (actual response value), category `heating` correct, **9,822 ms**. |
+| 2. Deployed-URL vertical flow | **PASS** | On https://repair-ledger-6faaa.web.app: local classify (21,175 ms cold / 10,186 ms warm) → Needs Review → Consent 1 → Confirm & Save to Firestore (Confirmed) → select 2 records → Consent 2 with send-preview → 1 cloud call → letter `Valid` → citation button click highlighted the exact source record; both records transitioned to `Included in Letter`; copy enabled. |
+| 3. App Check production | **PASS** | Deployed domain + fresh CDP Chrome profile (no debug token): after switching to `ReCaptchaEnterpriseProvider` with a true Enterprise key, attestation succeeded (cloud request reached the model; final synthesis returned 200). User confirmed in console: Firebase AI Logic = **Enforced**. Two failures measured en route: classic v3 key → `401 token is invalid` (grecaptcha execute rejects a classic key under the Enterprise script; classic v3 registration is deprecated), and a cached old bundle — both diagnosed from network captures, not guessed. |
+| 4. Clean-profile split | **PASS (criteria corrected by measurement)** | Supported profile (flags): local success = PASS (Gate 1). No-flag fresh Chrome 157 profile: Prompt API is present by default and also succeeded (`on_device`, 24,315 ms incl. download wait) — so "no-flag ⇒ unsupported" is false on Chrome 157. Simulated no-`LanguageModel` profile: explicit unsupported guidance rendered, and after the app-level guard (below) the request is blocked before any network call. |
+| 5. Minimal offline experiment | **PASS** | Same CDP session (emulation verified: `fetch` failed, `navigator.onLine=false`): offline classify → `on_device`, 16,701 ms, `pest` correct → Confirm & Save without refresh → save state displayed **"sync pending (기기 반영 / 동기화 대기)"**. After reconnect the same record reached server-reflected (incidental observation; full Gate 8 remains deferred). |
+| 6. Explicit cloud model + 1 synthesis, ID contract | **PASS with model-choice exception** | Synthesis succeeded: `inferenceSource=in_cloud`, **1,418 ms**, letter sentences each citing real record IDs (`b64db64b…`, `da59e860…`), `validateLetter()` passed. Model is explicitly named in code/env — see exception below. |
 
-## Gate 0 cross-check (Rules vs plan v2.1)
-- Deadline: Rules header "Nov 30, 2026 @ 5:00pm EST" = §4 submission end Nov 30 2:00pm PT. Plan's "11/30 5:00 PM ET, submit 11/29 night" is consistent. **No discrepancy.**
-- Required: Firebase AI Logic + Web(Chrome) with Gemini Nano via AI Logic — matches plan. Public repo + detectable open-source license — done (Apache-2.0). Runtime hybrid call must be in code, not only README — code exists, run pending Gate 1.
-- Rules state "Firebase AI Logic requires App Check; debug tokens are accepted in submissions." Plan is stricter (production attestation, no debug token in repo) — kept; no conflict.
-- Submission materials must be in English / app must at minimum support English — UI is English-primary (Korean only as fixed guidance text). Video ≤3 min, public YouTube — future checklist item, unchanged.
-- Eligibility (§3) — user confirmed residence in an eligible region (2026-11-16).
-- PII/production secrets must not be in repo/submission — secret scan clean; `.env*` gitignored except `.env.example`.
+## Critical SDK finding (fixed, regression-tested)
+firebase 13.3.0 silently falls back to the cloud when `LanguageModel` is absent, even in `ONLY_ON_DEVICE` mode: `chromeAdapterFactory` returns no adapter (node_modules/@firebase/ai/dist/esm/index.esm.js:1224-1231) and `callCloudOrDevice()` then runs the cloud call (:2562-2566). Measured live: a no-LanguageModel profile produced a cloud `generateContent` fetch. Fix: app-level pre-flight guard `assertOnDeviceCapable()` in `src/domain.ts` runs **before** any `generateContent()` call; re-measured — no cloud request is sent and the UI states so. Covered by unit tests (12/12 pass). Also: the OpenCode built-in Chromium 152 is an echo stub ("On-device model is not available in Chromium, this API is just echoing back the input") despite reporting `on_device`/100% download — it was **not** used as gate evidence; all gate measurements are from real Chrome 157.
 
-## SDK facts measured (firebase@13.3.0, pinned in package-lock.json)
-- `InferenceSource.ON_DEVICE === "on_device"` (lowercase string) — `node_modules/@firebase/ai/dist/ai-public.d.ts:1668`. The badge shows the raw response value; the check compares against the constant, not the literal `"ON_DEVICE"`.
-- Local: `npm run build` OK (vite 7.3.8), `npm test` 9/9 pass (`src/domain.test.ts`: state machine, edit-invalidation, ID contract, letter invalidation, timeline sort). Dev server renders with 0 console errors.
-- Environment: Node 24.16.0, Chrome 157.0.8103.51 installed (≥139 OK), `gh` logged in as Oplo-Works. No `firebase`/`gcloud` CLI.
+## Latency branch selected
+Measured on-device latencies: 9,822 / 21,175 (cold, new origin) / 10,186 / 7,369 / 16,701 (offline) / 24,315 ms (incl. download wait). Warm ≈7–10 s, cold first-call ≈16–24 s. Branch applied: **5–10 s path — strengthened progress UI** (elapsed-seconds indicator with cold-call notice, implemented in `src/main.ts`). No other branch was pre-built. Full cold/warm benchmark (Gate 9, 10 memos) remains 11/16–19 and may revisit this.
 
-## Branch table: not invoked
-No latency measured yet, so **no** latency branch (≤5s / 5–10s / …) is selected and nothing was pre-built for other branches. If Nano still cannot run via the SDK after the project exists, per plan: stop UI work, fix environment/SDK path first; if unresolved, re-evaluate submission viability (STOP gate).
+## Notes / exceptions
+1. **Cloud model:** explicitly specified as `gemini-3.5-flash-lite` after measured failures: `gemini-3.8-flash` → 500 "high demand" ×2 (~30 s, ~157 s), `gemini-4-hydrogen` → 500 ×1. Flash-lite is named explicitly in `VITE_CLOUD_MODEL`/code (not an unnamed default), but it is the lightweight tier — re-verify a higher model and judging-window availability before the 11/19 freeze and in early December (plan §심사 기간 운영).
+2. First OpenCode-Chromium "success" signals were discarded as stub artifacts (see SDK finding).
+3. Firestore Rules are deployed and uid-scoped; emulator rule tests are still required before any real personal records are entered (deferred item, unchanged).
 
-## Next attempts (in order, after owner delivers `DAY1-USER-CHECKLIST.md` §B–C values)
-1. Fill `.env.local`, run dev server in user's Chrome 157 (supported profile): click Prepare (starts Nano download — minutes), then classify sample memo; record `inferenceSource` raw value + latency. This is Gate 1.
-2. Deploy to Firebase Hosting; repeat the full flow on the deployed URL (Gate 2), then fresh-profile App Check verification + console enforcement screenshot (Gate 3), clean no-flag profile check (Gate 4), offline experiment (Gate 5), one cloud synthesis with citation trace (Gate 6).
-
-## Deferred to 11/16–19 (not touched today, per plan)
-10-memo benchmark & schema A/B, cloud-synthesis measurement set, Korean-input reaction check, model lifecycle details, offline details (reconnect sync, 4-stage save-state transitions), Firestore Rules emulator tests (before any real personal records), 311/HPD checklist source re-verification.
+## Deferred to 11/16–19 (untouched, per plan)
+10-memo benchmark & schema A/B (Gate 9), cloud-synthesis measurement set (Gate 10), Korean-input reaction (Gate 11), model lifecycle details (Gate 7), offline details beyond the minimal experiment (Gate 8), Firestore Rules emulator tests, Devpost text/video (11/28–29).
