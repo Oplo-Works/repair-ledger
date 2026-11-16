@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Repair Ledger</title></head>
+<body>
+<header>
+  <h1>Repair Ledger</h1>
+  <p>NYC tenant repair records: on-device classification in Chrome, one cloud synthesis for a landlord letter.</p>
+  <p class="ko">기기 내 분류 → 본인 확인 후 저장 → 클라우드 1회 합성. 안내 문구는 고정 안내문만 사용합니다.</p>
+  <div id="env" class="panel"></div>
+</header>
+
+<section class="panel">
+  <h2>0. On-device model (Gemini Nano via Firebase AI Logic)</h2>
+  <div id="modelStatus">Not prepared</div>
+  <button id="prepareBtn">1. Prepare on-device model (download if needed)</button>
+  <span id="downloadProgress"></span>
+  <p class="note">Diagnostic only: <code>LanguageModel.availability()</code> = <span id="diagAvail">not checked</span>
+  — the Day-1 gate is a real Firebase SDK call with <code>inferenceSource === on_device</code>, not this value.</p>
+</section>
+
+<section class="panel">
+  <h2>Data boundaries (disclosed, no overclaiming)</h2>
+  <ol>
+    <li><b>Local inference:</b> your memo text is processed on this device (ONLY_ON_DEVICE, no silent cloud fallback).</li>
+    <li><b>Storage/sync:</b> when you confirm &amp; save, the record <i>including the original text</i> is sent to Firestore and synced. Your text does leave this device for storage.</li>
+    <li><b>Letter synthesis:</b> only records you select are sent to Gemini in the cloud, after a separate preview + consent below.</li>
+  </ol>
+</section>
+
+<section class="panel">
+  <h2>1. New repair memo (English text only)</h2>
+  <label>Date occurred (primary: your input) <input id="dateInput" type="date" /></label>
+  <label>Location (primary: your input) <input id="locInput" type="text" placeholder="e.g. Kitchen" /></label>
+  <label>Memo (English)<br /><textarea id="memoInput" rows="4" placeholder="e.g. No heat or hot water since Monday morning. Radiator in bedroom is cold."></textarea></label>
+  <div><button id="loadSampleBtn" type="button">Load sample data (synthetic)</button>
+  <button id="classifyBtn">2. Run on-device classification (ONLY_ON_DEVICE)</button></div>
+  <div id="classifyResult"></div>
+</section>
+
+<section class="panel">
+  <h2>2. Review, confirm &amp; save</h2>
+  <div id="reviewBox">No record yet. Raw text is always preserved; on failure a record is kept as “Needs Review”.</div>
+  <label class="consent"><input id="consent1" type="checkbox" />
+  (Consent 1 — at save time) I understand the original text will be synced to Firestore (Firebase) for storage.</label><br />
+  <button id="confirmBtn" disabled>3. Confirm &amp; save to Firestore</button>
+  <span id="saveStatus"></span>
+</section>
+
+<section class="panel">
+  <h2>3. Timeline (sorted by app code) &amp; records</h2>
+  <div id="recordList">No records.</div>
+</section>
+
+<section class="panel">
+  <h2>4. Landlord letter — cloud synthesis (1 call)</h2>
+  <div id="letterPreview">Select Confirmed records above to preview exactly what will be sent.</div>
+  <label class="consent"><input id="consent2" type="checkbox" />
+  (Consent 2 — at synthesis time) Send the selected records shown above to Gemini cloud synthesis.</label><br />
+  <button id="letterBtn" disabled>4. Generate letter in cloud (ONLY_IN_CLOUD, explicit model)</button>
+  <div id="letterOut"></div>
+  <button id="copyLetterBtn" disabled>Copy letter</button>
+</section>
+
+<section class="panel">
+  <h2>311 / HPD checklist (static)</h2>
+  <ul>
+    <li>Keep dated copies of every notice you send your landlord.</li>
+    <li>NYC: you can check HPD complaints/violations for your building on HPD Online.</li>
+    <li>NYC 311: repair complaints can be filed via NYC311 (phone 311 / nyc.gov/311).</li>
+  </ul>
+  <p class="note">Static checklist. Sources: NYC311 &amp; HPD Online (verify current details there; last checked 2026-11-16). This is general information, not legal advice.</p>
+</section>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
