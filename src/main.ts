@@ -21,7 +21,7 @@ const selected = new Set<string>();
 let modelReady = false;
 
 const badge = (r: { inferenceSource: string | null; latencyMs: number | null }) =>
-  r.inferenceSource ? `<span class="badge">inferenceSource=${r.inferenceSource} · ${r.latencyMs ?? "?"} ms</span>` : "";
+  r.inferenceSource ? `<span class="badge" data-badge="inference" data-source="${r.inferenceSource}">inferenceSource=${r.inferenceSource} · ${r.latencyMs ?? "?"} ms</span>` : "";
 
 // ---- environment / unsupported guidance (Gate 4: separated criteria) ----
 async function renderEnv() {
@@ -46,6 +46,7 @@ async function persistRecord(rec: RepairRecord) {
   saveAttempted = true;
   if (!db || !uid) throw new Error("Firestore unavailable: Firebase config missing.");
   const { doc, setDoc } = await import("firebase/firestore");
+  el.saveStatus.dataset.stage = "pending";
   el.saveStatus.textContent = "Save state: device reflected → sync pending…";
   await setDoc(doc(db, "users", uid, "records", rec.id), rec);
 }
@@ -76,15 +77,19 @@ async function initStore() {
   // not document data, so without it the listener never re-fires and the label sticks at "sync pending" (P2).
   onSnapshot(collection(db!, "users", uid, "records"), { includeMetadataChanges: true }, (snap) => {
     records = snap.docs.map((d) => d.data() as RepairRecord);
+    if (snap.metadata.hasPendingWrites) el.saveStatus.dataset.stage = "pending";
+    else if (!saveAttempted) delete el.saveStatus.dataset.stage;
+    else if (snap.metadata.fromCache) el.saveStatus.dataset.stage = "device";
+    else el.saveStatus.dataset.stage = "server";
     el.saveStatus.textContent = saveStateLabel({ saveAttempted, hasPendingWrites: snap.metadata.hasPendingWrites, fromCache: snap.metadata.fromCache });
     renderRecords();
-  }, (e) => { el.saveStatus.textContent = `${saveStateLabel({ saveAttempted, hasPendingWrites: false, fromCache: false, failed: true })} — ${String(e)}`; });
+  }, (e) => { delete el.saveStatus.dataset.stage; el.saveStatus.textContent = `${saveStateLabel({ saveAttempted, hasPendingWrites: false, fromCache: false, failed: true })} — ${String(e)}`; });
   onSnapshot(collection(db!, "users", uid, "letters"), (snap) => {
     letters = snap.docs.map((d) => d.data() as Letter);
     renderLetter();
   });
 }
-void initStore().catch((e) => { el.saveStatus.textContent = `Auth/Firestore error: ${String(e)}`; });
+void initStore().catch((e) => { delete el.saveStatus.dataset.stage; el.saveStatus.textContent = `Auth/Firestore error: ${String(e)}`; });
 
 // ---- model lifecycle (first-screen UI) ----
 $("prepareBtn").addEventListener("click", async () => {
@@ -176,9 +181,9 @@ function renderReview() {
     `<label>Location <input id="reviewLocation" type="text" value="${escapeHtml(r.location)}" /></label><br/>` +
     (r.suggestedOccurredOn || r.suggestedLocation ? `<span class="note">Nano suggestions only (not applied): date=${r.suggestedOccurredOn ?? "-"}, location=${escapeHtml(r.suggestedLocation ?? "-")}. Your UI inputs above remain primary.</span><br/>` : "") +
     (() => { const detected = detectDefectCategories(r.rawText); return detected.length > 1
-      ? `<p class="warn">This memo appears to mention more than one defect type (${detected.join(", ")}), but a record is filed under one category only (<b>${r.category}</b>). Check that the summary below keeps every defect — and if another defect needs its own timeline entry, file it as a separate record after saving this one.</p>` : ""; })() +
-    badge(r) + ` Status: <b>${r.status}</b>` +
-    (r.confirmationSource ? `<br/><span class="badge">${r.confirmationSource === "manual" ? "Entered manually by user (no model classification)" : "Model-classified, user-confirmed"}</span>` : "");
+      ? `<p class="warn warn-multi">This memo appears to mention more than one defect type (${detected.join(", ")}), but a record is filed under one category only (<b>${r.category}</b>). Check that the summary below keeps every defect — and if another defect needs its own timeline entry, file it as a separate record after saving this one.</p>` : ""; })() +
+    badge(r) + ` Status: <b><span class="chip" data-status="${r.status}">${r.status}</span></b>` +
+    (r.confirmationSource ? `<br/><span class="badge" data-badge="provenance" data-provenance="${r.confirmationSource}">${r.confirmationSource === "manual" ? "Entered manually by user (no model classification)" : "Model-classified, user-confirmed"}</span>` : "");
   // Manual entry wiring: every keystroke/change updates record state immediately, so any
   // re-render (consent toggle, snapshot, status change) redraws from state and cannot wipe input.
   ($("confirmedText") as HTMLTextAreaElement).addEventListener("input", (e) => {
@@ -208,6 +213,7 @@ el.confirmBtn.addEventListener("click", async () => {
   if (!current || !el.consent1.checked) return;
   const edited = ($("confirmedText") as HTMLTextAreaElement | null)?.value ?? "";
   if (!canConfirm(current.status, edited)) {
+    delete el.saveStatus.dataset.stage;
     el.saveStatus.textContent = `Cannot save yet: the record must be in “Needs Review” with non-empty confirmed text (current status: ${current.status}). Wait for classification to finish and check the summary.`;
     return;
   }
@@ -218,8 +224,9 @@ el.confirmBtn.addEventListener("click", async () => {
   // Non-blocking save: reflect on device immediately, let the snapshot listener report sync stages.
   // The screen never waits for the server acknowledgement (offline saves settle as "sync pending").
   current.status = "Confirmed";
+  el.saveStatus.dataset.stage = "device";
   el.saveStatus.textContent = "Save state: 1) device reflected (기기 반영)";
-  void persistRecord({ ...current }).catch((e) => { el.saveStatus.textContent = `Save state: 4) sync failed (동기화 실패) — ${String(e)}`; });
+  void persistRecord({ ...current }).catch((e) => { delete el.saveStatus.dataset.stage; el.saveStatus.textContent = `Save state: 4) sync failed (동기화 실패) — ${String(e)}`; });
   renderReview(); renderRecords();
 });
 
@@ -236,9 +243,9 @@ function renderRecords() {
     return header +
     `<div class="rec" id="rec-${r.id}">
       <label><input type="checkbox" data-select="${r.id}" ${selected.has(r.id) ? "checked" : ""} ${r.status !== "Confirmed" && r.status !== "Included in Letter" ? "disabled" : ""}/> include in letter</label>
-      <b>[${escapeHtml(r.occurredOn || "date unknown")}] ${escapeHtml(r.location || "")} — ${r.category}</b> · ${r.status} ${badge(r)}<br/>
+      <b>[${escapeHtml(r.occurredOn || "date unknown")}] ${escapeHtml(r.location || "")} — ${r.category}</b> · <span class="chip" data-status="${r.status}">${r.status}</span> ${badge(r)}<br/>
       <div class="cols"><div><i>Original:</i><br/>${escapeHtml(r.rawText)}</div><div><i>Confirmed summary (user-checked):</i><br/>${escapeHtml(r.confirmedText ?? "(not confirmed yet)")}</div></div>
-      ${r.confirmationSource === "manual" ? `<span class="badge">Entered manually by user (no model classification)</span>` : r.confirmationSource === "model" ? `<span class="badge">Model-classified, user-confirmed</span>` : ""}
+      ${r.confirmationSource === "manual" ? `<span class="badge" data-badge="provenance" data-provenance="manual">Entered manually by user (no model classification)</span>` : r.confirmationSource === "model" ? `<span class="badge" data-badge="provenance" data-provenance="model">Model-classified, user-confirmed</span>` : ""}
       <button data-edit="${r.id}">Edit</button> <button data-del="${r.id}">Delete</button>
     </div>`;
   }).join("");
@@ -279,6 +286,7 @@ let lastLetter: Letter | null = null;
 el.letterBtn.addEventListener("click", async () => {
   const sel = selectedRecords();
   if (!sel.length || !el.consent2.checked) return;
+  delete el.letterOut.dataset.letterStatus;
   el.letterOut.textContent = "Generating in cloud (1 call)…";
   try {
     const r = await generateLetterInCloud(sel);
@@ -288,6 +296,7 @@ el.letterBtn.addEventListener("click", async () => {
     renderLetter(); renderRecords();
   } catch (e) {
     // Failure recovery (model-independent): failure state shown, records are preserved, manual retry only — no auto-retry, no silent model switch.
+    delete el.letterOut.dataset.letterStatus;
     el.letterOut.innerHTML = `<span class="warn">Letter generation failed: ${String(e)}</span><br/>Your selected records are preserved and unchanged. No letter was saved.<br/><button id="retryLetterBtn" type="button">Retry generation</button>`;
     $("retryLetterBtn").addEventListener("click", () => el.letterBtn.click());
   }
@@ -297,7 +306,8 @@ function renderLetter() {
   const l = [...letters].sort((a, b) => b.createdAt - a.createdAt)[0] ?? lastLetter;
   if (!l) return;
   lastLetter = l;
-  el.letterOut.innerHTML = `<b>Letter (${l.status})</b> ${badge(l)} model=${l.model}<br/>` +
+  el.letterOut.dataset.letterStatus = l.status;
+  el.letterOut.innerHTML = `<b>Letter (<span class="chip" data-status="${l.status}">${l.status}</span>)</b> ${badge(l)} model=${l.model}<br/>` +
     l.sentences.map((s) => `<p class="sentence">${escapeHtml(s.text)} ${s.sourceRecordIds.map((id) => `<button data-cite="${id}" title="Trace to source record">[${id.slice(0, 8)}…]</button>`).join(" ")}</p>`).join("") +
     (l.status === "Invalidated" ? `<p class="warn">This letter was invalidated because a cited record was edited or deleted. Regenerate it.</p>` : "");
   el.copyLetterBtn.disabled = l.status !== "Valid";

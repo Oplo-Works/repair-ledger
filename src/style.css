@@ -1,13 +1,405 @@
-body { font-family: system-ui, sans-serif; margin: 24px auto; max-width: 880px; padding: 0 16px; line-height: 1.5; }
-.panel { border: 1px solid #ccc; border-radius: 8px; padding: 16px; margin: 16px 0; }
-textarea { width: 100%; } input[type="text"] { width: 60%; }
-button { margin: 6px 6px 6px 0; padding: 8px 12px; cursor: pointer; }
-.badge { background: #e8f5e9; border: 1px solid #81c784; border-radius: 12px; padding: 1px 8px; font-size: 12px; white-space: nowrap; }
-.warn { color: #b71c1c; } .note, .ko { color: #555; font-size: 14px; }
-.rec { border-top: 1px solid #eee; border-left: 3px solid #90a4ae; padding: 10px 4px 10px 12px; margin-left: 6px; } .rec.highlight { background: #fff9c4; outline: 2px solid #f9a825; }
-.tl-group { margin: 18px 0 4px; color: #37474f; font-size: 15px; }
-.sentence { margin: 8px 0; } blockquote { background: #f5f5f5; margin: 6px 0; padding: 8px 12px; }
-.consent { font-weight: 600; }
+/* Civic Ledger polish (CSS + render hooks for trust elements).
+ * Hooks (attributes only, text/logic unchanged): .badge[data-badge][data-source|
+ * data-provenance], .chip[data-status], #saveStatus[data-stage],
+ * #letterOut[data-letter-status], section.appendix, .warn-multi.
+ * Real status/source values are used verbatim (e.g. on_device, Needs Review).
+ */
+:root {
+  color-scheme: light;
+  --bg: #F6F4EF;
+  --surface: #FFFFFF;
+  --surface-sunken: #EFECE4;
+  --border: #D9D5CA;
+  --border-strong: #8F8A7C;
+  --text: #1B2430;
+  --text-muted: #4A5565;
+  --accent: #1F4E79;
+  --accent-hover: #173B5C;
+  --accent-soft: #E3EDF7;
+  --accent-line: #9DBBD8;
+  --ok: #1E5E3A;        --ok-bg: #E4F2E8;        --ok-line: #9CC8AA;
+  --warn: #7A4B00;      --warn-bg: #FFF3D6;      --warn-line: #E3C16F;
+  --bad: #8A2A1F;       --bad-bg: #FBE9E6;       --bad-line: #E0A59C;
+  --local: #0B4F4D;     --local-bg: #E0F1F0;     --local-line: #8CC7C4;
+  --cloud: #34327F;     --cloud-bg: #ECECFA;     --cloud-line: #B3B2E3;
+  --mark-bg: #FFF0B8;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Consolas, "Courier New", monospace;
+}
+
+/* ---- base / layout (§2) ---- */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 24px auto;
+  max-width: 980px;
+  padding: 0 24px;
+}
+button, input, textarea, select { font: inherit; }
+h1 { font-size: 28px; font-weight: 700; }
+section.panel h2 { font-size: 20px; font-weight: 650; }
+.note, .ko { color: var(--text-muted); font-size: 14px; }
+
+/* ---- sections: white cards (§2) ---- */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(27, 36, 48, 0.06);
+  margin: 16px 0;
+  padding: 20px 24px;
+}
+section.panel {
+  margin: 28px 0;
+  padding: 20px 24px 20px 40px;
+  position: relative;
+}
+/* Left rail: static decoration, same on every section (no status meaning). */
+section.panel::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 24px;
+  bottom: 24px;
+  width: 2px;
+  background: #C9D3DE;
+}
+section.panel:last-of-type::before { display: none; }
+section.panel h2 {
+  border-bottom: 1px solid var(--border);
+  margin-top: 0;
+  padding-bottom: 12px;
+  padding-left: 0;
+  position: relative;
+}
+section.panel h2::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  margin-right: 10px;
+  margin-left: -29px;
+  vertical-align: baseline;
+}
+/* Section 0 (model panel): sunken one level. Hooked via existing #modelStatus id. */
+section.panel:has(#modelStatus) { background: var(--surface-sunken); }
+section.panel:has(#modelStatus) h2::before { background: var(--surface-sunken); }
+/* 311/HPD appendix block (hook: .appendix class on that section only). */
+section.panel.appendix {
+  background: var(--surface-sunken);
+  border: 1px dashed var(--border-strong);
+}
+section.panel.appendix h2::before { background: var(--surface-sunken); }
+
+/* ---- form controls (§2) ---- */
+textarea, input[type="text"], input[type="date"], select {
+  background: #fff;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  color: var(--text);
+}
+textarea { width: 100%; }
+input[type="text"] { width: 60%; }
+textarea:focus, input:focus, select:focus,
+textarea:focus-visible, input:focus-visible, select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+label { display: inline-block; margin: 4px 0; }
+
+/* ---- buttons (§3) ---- */
+button {
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 6px 6px 6px 0;
+  min-height: 44px;
+  padding: 10px 16px;
+  transition: background-color 0.15s ease-in-out;
+}
+/* Primary buttons: one per section, hooked by existing ids. */
+#classifyBtn, #confirmBtn, #letterBtn {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+}
+#classifyBtn:hover, #confirmBtn:hover, #letterBtn:hover { background: var(--accent-hover); }
+/* Secondary buttons. */
+#prepareBtn, #loadSampleBtn, #copyLetterBtn, #exportLetterBtn,
+button[data-edit], button[data-del] {
+  background: #fff;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+#prepareBtn:hover, #loadSampleBtn:hover, #copyLetterBtn:hover, #exportLetterBtn:hover,
+button[data-edit]:hover, button[data-del]:hover { background: var(--accent-soft); }
+/* Letter retry: bad-outline. */
+#retryLetterBtn {
+  background: #fff;
+  border: 1px solid var(--bad);
+  color: var(--bad);
+}
+#retryLetterBtn:hover { background: var(--bad-bg); }
+/* Disabled: uniform across all buttons. */
+button:disabled {
+  background: #E6E3DB;
+  border-color: #E6E3DB;
+  color: #5B616B;
+  cursor: not-allowed;
+}
+
+/* ---- trust elements (§4) ---- */
+/* 4-1. inferenceSource badge: base is the neutral unified style.
+ * Never truncated: no ellipsis, wrapping allowed. */
+.badge {
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-height: 24px;
+  padding: 0 10px;
+  vertical-align: middle;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* Inference variants: source = filled dot (local) vs empty ring (cloud). */
+.badge[data-badge="inference"] { gap: 6px; }
+.badge[data-badge="inference"][data-source="on_device"] {
+  background: var(--local-bg);
+  border-color: var(--local-line);
+  color: var(--local);
+}
+.badge[data-badge="inference"][data-source="on_device"]::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--local);
+  flex: none;
+}
+.badge[data-badge="inference"][data-source="in_cloud"] {
+  background: var(--cloud-bg);
+  border-color: var(--cloud-line);
+  color: var(--cloud);
+}
+.badge[data-badge="inference"][data-source="in_cloud"]::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--cloud);
+  background: transparent;
+  box-sizing: border-box;
+  flex: none;
+}
+/* Provenance badges: one step weaker than inference badges. */
+.badge[data-badge="provenance"] {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+/* 4-2. Status chips: pill shape, values are the code's status strings. */
+.chip {
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  min-height: 23px;
+  padding: 0 10px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.chip[data-status="Confirmed"], .chip[data-status="Valid"] {
+  background: var(--ok-bg);
+  border-color: var(--ok-line);
+  color: var(--ok);
+}
+.chip[data-status="Included in Letter"] {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.chip[data-status="Invalidated"] {
+  background: var(--bad-bg);
+  border: 1.5px solid var(--bad-line);
+  color: var(--bad);
+}
+.chip[data-status="Needs Review"] {
+  background: var(--warn-bg);
+  border-color: var(--warn-line);
+  color: var(--warn);
+}
+.chip[data-status="Draft"], .chip[data-status="Processing"] {
+  background: var(--surface-sunken);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+/* 4-3. Citation buttons: always visible, hooked by data-cite. */
+button[data-cite] {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 4px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 2px;
+  min-height: 22px;
+  padding: 2px 6px;
+  position: relative;
+}
+button[data-cite]::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+button[data-cite]:hover { background: var(--accent-line); color: var(--accent-hover); }
+/* 4-4. Citation highlight target. Static, no animation/transition. */
+.rec {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid #90a4ae;
+  border-radius: 6px;
+  margin: 12px 0 12px 6px;
+  padding: 10px 12px;
+  scroll-margin-top: 24px;
+}
+.rec.highlight {
+  background: #E8F1FA;
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+/* 4-5. Korean <mark>: must not collide with citation blue. */
+mark {
+  background: var(--mark-bg);
+  border-radius: 2px;
+  color: var(--text);
+  font-weight: 600;
+  padding: 0 2px;
+}
+/* 4-6. Save-state label: stages via #saveStatus[data-stage].
+ * No stage attribute (no saves yet / failed / errors) keeps the neutral dot.
+ * No red, no spinner. */
+#saveStatus {
+  align-items: center;
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  gap: 6px;
+  min-height: 24px;
+}
+#saveStatus::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #44505F;
+  flex: none;
+}
+#saveStatus[data-stage="device"]::before {
+  background: #44505F;
+}
+#saveStatus[data-stage="pending"]::before {
+  background: transparent;
+  border: 2px solid var(--warn);
+  box-sizing: border-box;
+}
+#saveStatus[data-stage="server"]::before {
+  background: transparent;
+  border-radius: 0;
+  border-right: 2px solid var(--ok);
+  border-bottom: 2px solid var(--ok);
+  width: 5px;
+  height: 9px;
+  transform: rotate(45deg) translateY(-1px);
+}
+/* 4-7. Warning/notice blocks — unified .warn treatment (.warn is shared by all
+ * warnings; no dedicated multi-defect hook). Full-size text, never small gray. */
+p.warn {
+  background: var(--warn-bg);
+  border-left: 4px solid #C28A00;
+  border-radius: 0 6px 6px 0;
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 12px;
+}
+span.warn { color: var(--bad); font-weight: 600; }
+/* 4-8. Consent area. */
+.consent {
+  background: #F0F4F8;
+  border: 1px solid #C9D3DE;
+  border-radius: 6px;
+  display: inline-block;
+  margin: 8px 0;
+  padding: 12px 16px;
+}
+.consent input[type="checkbox"] { accent-color: var(--accent); }
+/* 4-9. Transfer preview. */
+#letterPreview {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 12px 16px;
+}
+/* 4-10. Original vs summary two-column (structure kept). */
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 6px 0; }
-.cols > div { background: #fafafa; border: 1px solid #eee; border-radius: 6px; padding: 8px; }
-mark { background: #ffe082; padding: 0 2px; }
+.cols > div {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.cols > div:first-child { border-left: 3px solid var(--border-strong); }
+.cols > div:last-child { border-left: 3px solid var(--accent); }
+.cols > div i {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* ---- remaining existing hooks, adapted to tokens ---- */
+.tl-group { color: var(--text-muted); font-size: 15px; margin: 18px 0 4px; }
+.sentence { margin: 8px 0; }
+blockquote {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  border-radius: 0 6px 6px 0;
+  margin: 6px 0;
+  padding: 8px 12px;
+}
+.rec > b { font-size: 16px; font-weight: 600; }
+#letterOut { margin-top: 12px; }
+/* Invalidated letter block: bad left border, no strikethrough/fading. */
+#letterOut[data-letter-status="Invalidated"] {
+  background: #FFF8F6;
+  border-left: 4px solid var(--bad-line);
+  border-radius: 0 6px 6px 0;
+  padding: 12px 16px;
+}
+#classifyResult, #reviewBox, #recordList { margin: 8px 0; }
+#downloadProgress, #diagAvail { font-family: var(--font-mono); font-size: 13px; }
+#modelStatus { margin: 4px 0; }
