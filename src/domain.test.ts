@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canTransition, applyEdit, sortTimeline, validateLetter, letterNeedsInvalidation, assertOnDeviceCapable, canConfirm, type RepairRecord, type Letter } from "./domain";
+import { canTransition, applyEdit, sortTimeline, validateLetter, letterNeedsInvalidation, assertOnDeviceCapable, canConfirm, saveStateLabel, type RepairRecord, type Letter } from "./domain";
 
 const rec = (over: Partial<RepairRecord> = {}): RepairRecord => ({
   id: "r1", rawText: "No heat since Monday", aiText: null, confirmedText: null,
@@ -30,6 +30,25 @@ describe("state machine", () => {
     const edited = applyEdit(rec(), "Edited by user");
     expect(edited.status).toBe("Needs Review");
     expect(edited.rawText).toBe("No heat since Monday");
+  });
+});
+
+describe("save-state label mapping (P2: ack must reach the label)", () => {
+  it("is neutral before any save in the session (P1 behavior kept)", () => {
+    expect(saveStateLabel({ saveAttempted: false, hasPendingWrites: false, fromCache: false })).toContain("no saves yet");
+    expect(saveStateLabel({ saveAttempted: false, hasPendingWrites: false, fromCache: true })).toContain("no saves yet");
+  });
+  it("an offline write stays at sync pending — never mislabeled server reflected", () => {
+    expect(saveStateLabel({ saveAttempted: true, hasPendingWrites: true, fromCache: true })).toContain("sync pending");
+    expect(saveStateLabel({ saveAttempted: true, hasPendingWrites: true, fromCache: false })).toContain("sync pending");
+  });
+  it("the ack transition (pending writes cleared, server snapshot) reaches server reflected", () => {
+    // This is the exact metadata change includeMetadataChanges now delivers.
+    expect(saveStateLabel({ saveAttempted: true, hasPendingWrites: false, fromCache: false })).toContain("3) server reflected");
+  });
+  it("a settled cache-only snapshot reads as device reflected, and errors read as sync failed", () => {
+    expect(saveStateLabel({ saveAttempted: true, hasPendingWrites: false, fromCache: true })).toContain("device reflected");
+    expect(saveStateLabel({ saveAttempted: true, hasPendingWrites: false, fromCache: false, failed: true })).toContain("4) sync failed");
   });
 });
 

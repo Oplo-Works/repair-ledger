@@ -58,6 +58,16 @@ export function resolveConfirmationSource(rec: RepairRecord): ConfirmationSource
   return rec.aiText ? "model" : "manual";
 }
 
+/** Save-state label mapping (4 stages). Kept pure so listener metadata transitions are regression-tested.
+ * Stage 4 is produced by listener/write errors, not by a snapshot. */
+export function saveStateLabel(s: { saveAttempted: boolean; hasPendingWrites: boolean; fromCache: boolean; failed?: boolean }): string {
+  if (s.failed) return "Save state: 4) sync failed (동기화 실패)";
+  if (!s.saveAttempted && !s.hasPendingWrites) return "Save state: no saves yet this session";
+  if (s.hasPendingWrites) return "Save state: 1) device reflected → 2) sync pending (기기 반영 / 동기화 대기)";
+  if (s.fromCache) return "Save state: 1) device reflected (기기 반영 — cached)";
+  return "Save state: 3) server reflected (서버 반영)";
+}
+
 /** Confirm & Save is only legal from Needs Review with non-empty confirmed text (prevents saving a still-Processing or empty record). */
 export function canConfirm(status: RecordStatus, confirmedText: string): boolean {
   return status === "Needs Review" && confirmedText.trim().length > 0;

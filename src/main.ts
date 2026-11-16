@@ -1,7 +1,7 @@
 import "./style.css";
 import { configMissing, appCheckConfigured, db, ensureAnonUid, CLOUD_MODEL } from "./firebase";
 import { prepareDeviceModel, classifyOnDevice, generateLetterInCloud } from "./ai";
-import { applyEdit, letterNeedsInvalidation, sortTimeline, hasHangul, highlightFacts, detectDefectCategories, canConfirm, applyManualEntry, resolveConfirmationSource, CATEGORIES, type Letter, type RepairRecord } from "./domain";
+import { applyEdit, letterNeedsInvalidation, sortTimeline, hasHangul, highlightFacts, detectDefectCategories, canConfirm, applyManualEntry, resolveConfirmationSource, saveStateLabel, CATEGORIES, type Letter, type RepairRecord } from "./domain";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const el = {
@@ -72,17 +72,13 @@ async function initStore() {
   if (configMissing) return;
   uid = await ensureAnonUid();
   const { collection, onSnapshot } = await import("firebase/firestore");
-  onSnapshot(collection(db!, "users", uid, "records"), (snap) => {
+  // includeMetadataChanges is required: a write ack changes only snapshot metadata (hasPendingWrites),
+  // not document data, so without it the listener never re-fires and the label sticks at "sync pending" (P2).
+  onSnapshot(collection(db!, "users", uid, "records"), { includeMetadataChanges: true }, (snap) => {
     records = snap.docs.map((d) => d.data() as RepairRecord);
-    // Save-state 4 stages (BUILD-PLAN): device reflected / sync pending / server reflected / sync failed.
-    // Before any save in this session, stay neutral — an initial (possibly empty) snapshot is not a save.
-    el.saveStatus.textContent = !saveAttempted && !snap.metadata.hasPendingWrites
-      ? "Save state: no saves yet this session"
-      : snap.metadata.hasPendingWrites
-        ? "Save state: 1) device reflected → 2) sync pending (기기 반영 / 동기화 대기)"
-        : snap.metadata.fromCache ? "Save state: 1) device reflected (기기 반영 — cached)" : "Save state: 3) server reflected (서버 반영)";
+    el.saveStatus.textContent = saveStateLabel({ saveAttempted, hasPendingWrites: snap.metadata.hasPendingWrites, fromCache: snap.metadata.fromCache });
     renderRecords();
-  }, (e) => { el.saveStatus.textContent = `Save state: 4) sync failed (동기화 실패) — ${String(e)}`; });
+  }, (e) => { el.saveStatus.textContent = `${saveStateLabel({ saveAttempted, hasPendingWrites: false, fromCache: false, failed: true })} — ${String(e)}`; });
   onSnapshot(collection(db!, "users", uid, "letters"), (snap) => {
     letters = snap.docs.map((d) => d.data() as Letter);
     renderLetter();
