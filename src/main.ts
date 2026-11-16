@@ -99,6 +99,9 @@ $("prepareBtn").addEventListener("click", async () => {
   void renderEnv();
 });
 
+// Korean input (Decision 1, allow + disclose): non-blocking banner at input time, exact fixed wording.
+el.memo.addEventListener("input", () => { $("koreanBanner").hidden = !/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(el.memo.value); });
+
 // ---- step 1: local classification (ONLY_ON_DEVICE, no fallback) ----
 el.classifyBtn.addEventListener("click", async () => {
   const rawText = el.memo.value.trim();
@@ -127,17 +130,28 @@ async function classifyOnce(rec: RepairRecord) {
     el.classifyResult.innerHTML = `On-device result ${badge(r)}<br/>Category: <b>${r.category}</b> (use “unknown / Needs Review” freely — never forced)`;
   } catch (e) {
     rec.status = "Needs Review"; // raw text preserved on failure
-    el.classifyResult.innerHTML = `<span class="warn">On-device classification failed: ${String(e)}<br/>Raw text preserved as “Needs Review”. No silent cloud fallback was used.</span>`;
+    const unsupportedLang = /NotSupportedError|not supported|unsupported/i.test(String(e)) || /NotSupportedError/.test((e as Error)?.name ?? "");
+    el.classifyResult.innerHTML = `<span class="warn">On-device classification failed: ${String(e)}<br/>Raw text preserved as “Needs Review”. No silent cloud fallback was used.` +
+      (unsupportedLang ? `<br/>한국어 입력은 공식 지원되지 않습니다. 온디바이스 모델이 이 언어를 지원하지 않을 수 있습니다. 원문은 보존됐으니 영어로 다시 입력하거나 직접 분류·요약을 입력해 주세요.` : "") +
+      `</span>`;
   }
   renderReview();
 }
 
 // ---- step 2: review / confirm / save (Consent 1) ----
+const hasHangul = (s: string) => /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(s);
+// Highlight dates, numbers, amounts, unit/room numbers and Latin-script names for side-by-side comparison.
+function highlightFacts(escaped: string): string {
+  return escaped.replace(/(\d+\s*월\s*\d+\s*일|\d+\s*월|\d+\s*일|\d+\s*달러|\$\s*\d+|\d+\s*층|\d+\s*호|\d+\s*개|\d+\s*주일?|November\s*\d+|[A-Z][a-z]+)/g, "<mark>$1</mark>");
+}
+
 function renderReview() {
   if (!current) return;
   const r = current;
+  const korean = hasHangul(r.rawText);
   el.reviewBox.innerHTML =
-    `<b>Original (always preserved):</b><br/><blockquote>${escapeHtml(r.rawText)}</blockquote>` +
+    (korean ? `<p class="warn">한국어 입력은 공식 지원되지 않습니다. 아래 원문에서 <mark>날짜·숫자·금액·이름</mark>을 확정 요약과 나란히 대조해 주세요. 장소: <b>${escapeHtml(r.location || "(unknown)")}</b> · 날짜: <b>${r.occurredOn || "(unknown)"}</b></p>` : "") +
+    `<b>Original (always preserved):</b><br/><blockquote>${korean ? highlightFacts(escapeHtml(r.rawText)) : escapeHtml(r.rawText)}</blockquote>` +
     `<label>Confirmed text (edit freely — editing invalidates any prior confirmation)<br/><textarea id="confirmedText" rows="3">${escapeHtml(r.confirmedText ?? "")}</textarea></label><br/>` +
     `Category: <b>${r.category}</b> · Date: ${r.occurredOn || "(unknown)"} · Location: ${escapeHtml(r.location || "(unknown)")}<br/>` +
     (r.suggestedOccurredOn || r.suggestedLocation ? `<span class="note">Nano suggestions only (not applied): date=${r.suggestedOccurredOn ?? "-"}, location=${escapeHtml(r.suggestedLocation ?? "-")}. Your UI inputs above remain primary.</span><br/>` : "") +
@@ -168,7 +182,7 @@ function renderRecords() {
     `<div class="rec" id="rec-${r.id}">
       <label><input type="checkbox" data-select="${r.id}" ${selected.has(r.id) ? "checked" : ""} ${r.status !== "Confirmed" && r.status !== "Included in Letter" ? "disabled" : ""}/> include in letter</label>
       <b>[${escapeHtml(r.occurredOn || "date unknown")}] ${escapeHtml(r.location || "")} — ${r.category}</b> · ${r.status} ${badge(r)}<br/>
-      ${escapeHtml(r.confirmedText ?? r.rawText)}
+      <div class="cols"><div><i>Original:</i><br/>${escapeHtml(r.rawText)}</div><div><i>Confirmed summary (user-checked):</i><br/>${escapeHtml(r.confirmedText ?? "(not confirmed yet)")}</div></div>
       <button data-edit="${r.id}">Edit</button> <button data-del="${r.id}">Delete</button>
     </div>`).join("");
   el.recordList.querySelectorAll("[data-select]").forEach((c) => c.addEventListener("change", (e) => {
@@ -216,8 +230,9 @@ el.letterBtn.addEventListener("click", async () => {
     for (const rec of sel) { rec.status = "Included in Letter"; void persistRecord(rec).catch(() => {}); }
     renderLetter(); renderRecords();
   } catch (e) {
-    lastLetter = null;
-    el.letterOut.innerHTML = `<span class="warn">Letter generation failed: ${String(e)}</span>`;
+    // Failure recovery (model-independent): failure state shown, records are preserved, manual retry only — no auto-retry, no silent model switch.
+    el.letterOut.innerHTML = `<span class="warn">Letter generation failed: ${String(e)}</span><br/>Your selected records are preserved and unchanged. No letter was saved.<br/><button id="retryLetterBtn" type="button">Retry generation</button>`;
+    $("retryLetterBtn").addEventListener("click", () => el.letterBtn.click());
   }
 });
 

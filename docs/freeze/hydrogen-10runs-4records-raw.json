@@ -1,0 +1,516 @@
+ENV: · App Check configured (reCAPTCHA Enterprise) · cloud model (explicit) = gemini-4-hydrogen
+RECORD_IDS: ["b64db64b-0885-4de3-bdf9-b1d8366b5175","da59e860-861f-4344-ba76-c8025c7ef36a","56f79024-68e2-47d7-9b4c-7aafa86da931","d3964403-35b9-42ef-b666-2c4ff184f539","3ee3632a-bef0-4c9d-ab4c-eb81644c51e1"]
+RECORD_MAP: [
+ {
+  "id": "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+  "text": " include in letter [2026-11-10] Bedroom — heating · Included in Letter inferenceSource=on_device · 21175 ms\nThe tenant reports no heat or hot water since Monday morning, with a cold radiator in the bedroom and a freezing apartment. Edit Delete"
+ },
+ {
+  "id": "da59e860-861f-4344-ba76-c8025c7ef36a",
+  "text": " include in letter [2026-11-12] Bathroom — water_leak · Included in Letter inferenceSource=on_device · 10186 ms\nWater has been leaking from the bathroom ceiling since November 12th, causing paint to bubble and a bucket to fill up overnight. Edit Delete"
+ },
+ {
+  "id": "56f79024-68e2-47d7-9b4c-7aafa86da931",
+  "text": " include in letter [2026-11-13] Bathroom — mold · Confirmed inferenceSource=on_device · 7369 ms\nThe memo reports black mold growth on a bathroom wall with an escalating odor. Edit Delete"
+ },
+ {
+  "id": "d3964403-35b9-42ef-b666-2c4ff184f539",
+  "text": " include in letter [2026-11-14] Kitchen — pest · Confirmed inferenceSource=on_device · 16701 ms\nMice droppings were found in kitchen cabinets this week. Edit Delete"
+ },
+ {
+  "id": "3ee3632a-bef0-4c9d-ab4c-eb81644c51e1",
+  "text": " include in letter [2026-11-16] Kitchen — pest · Confirmed inferenceSource=on_device · 5944 ms\nCockroaches were observed under the sink. Edit Delete"
+ }
+]
+[
+  {
+    "run": 1,
+    "latencyMs": 23967,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 23967 ms model=gemini-4-hydrogen\n\n\nI am writing to politely request repairs fo",
+    "sentences": [
+      {
+        "text": "I am writing to politely request repairs for the following issues in the apartment. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "As reported on November 10, 2026, there has been no heat or hot water since Monday morning, with a cold radiator in the bedroom and a freezing apartment. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "Additionally, water has been leaking from the bathroom ceiling since November 12, 2026, causing paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "On November 13, 2026, black mold growth on a bathroom wall with an escalating odor was also reported. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "Finally, as noted on November 14, 2026, mice droppings were found in the kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your attention to addressing the heating, water leak, mold, and pest issues in the bedroom, bathroom, and kitchen. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  },
+  {
+    "run": 2,
+    "latencyMs": 60142,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 60142 ms model=gemini-4-hydrogen\n\n\nI am writing to respectfully request repair",
+    "sentences": [
+      {
+        "text": "I am writing to respectfully request repairs for several maintenance issues affecting the apartment. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "As reported on November 10, 2026, there has been no heat or hot water since Monday morning, with a cold radiator in the bedroom and a freezing apartment. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "Water has also been leaking from the bathroom ceiling since November 12, 2026, causing paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "Additionally, a record from November 13, 2026 notes black mold growth on a bathroom wall with an escalating odor. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "Finally, on November 14, 2026, mice droppings were found in the kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your attention to these heating, water leak, mold, and pest issues, and I kindly ask that repairs be arranged. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  },
+  {
+    "run": 3,
+    "latencyMs": 37229,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 37229 ms model=gemini-4-hydrogen\n\n\nDear Landlord, I am writing to politely req",
+    "sentences": [
+      {
+        "text": "Dear Landlord, I am writing to politely request repairs for several maintenance issues reported in the apartment. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "As reported on November 10, 2026, there has been no heat or hot water since Monday morning, with a cold radiator in the bedroom and a freezing apartment. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "In the bathroom, water has been leaking from the ceiling since November 12, 2026, causing paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "On November 13, 2026, black mold growth was reported on a bathroom wall with an escalating odor. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "Additionally, as noted on November 14, 2026, mice droppings were found in the kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your attention to addressing these heating, water leak, mold, and pest issues. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  },
+  {
+    "run": 4,
+    "latencyMs": 43056,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 43056 ms model=gemini-4-hydrogen\n\n\nDear Landlord, I am writing to politely req",
+    "sentences": [
+      {
+        "text": "Dear Landlord, I am writing to politely request repairs for the heating, water leak, mold, and pest issues in the apartment. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "As reported on November 10, 2026, there has been no heat or hot water since Monday morning, with a cold radiator in the bedroom and a freezing apartment. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "In the bathroom, water has been leaking from the ceiling since November 12, 2026, causing paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "Additionally, as noted on November 13, 2026, there is black mold growth on a bathroom wall with an escalating odor. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "Finally, as recorded on November 14, 2026, mice droppings were found in the kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your attention to these repair needs in the bedroom, bathroom, and kitchen. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  },
+  {
+    "run": 5,
+    "latencyMs": 49710,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 49710 ms model=gemini-4-hydrogen\n\n\nDear Landlord, I am writing to respectfully",
+    "sentences": [
+      {
+        "text": "Dear Landlord, I am writing to respectfully request repairs for the heating, water leak, mold, and pest issues in the apartment. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "As noted on November 10, 2026, there has been no heat or hot water since Monday morning, with a cold radiator in the bedroom and a freezing apartment. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "Water has also been leaking from the bathroom ceiling since November 12, 2026, causing paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "On November 13, 2026, black mold growth with an escalating odor was reported on a bathroom wall. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "Additionally, as recorded on November 14, 2026, mice droppings were found in the kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your attention to repairing these heating, bathroom leak, black mold, and kitchen pest issues. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  },
+  {
+    "run": 6,
+    "latencyMs": 42975,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 42975 ms model=gemini-4-hydrogen\n\n\nDear Landlord, I am writing to respectfully",
+    "sentences": [
+      {
+        "text": "Dear Landlord, I am writing to respectfully request repairs for several issues in the apartment involving heating, a water leak, mold, and pests. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "As reported on November 10, 2026, there has been no heat or hot water since Monday morning, with a cold radiator in the bedroom and a freezing apartment. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "In the bathroom, water has been leaking from the ceiling since November 12, 2026, causing the paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "Additionally, as noted on November 13, 2026, there is black mold growth on a bathroom wall with an escalating odor. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "Finally, as recorded on November 14, 2026, mice droppings were found in the kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your attention to repairing the heating in the bedroom, the water leak and black mold in the bathroom, and the pest issue in the kitchen. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  },
+  {
+    "run": 7,
+    "latencyMs": 27537,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 27537 ms model=gemini-4-hydrogen\n\n\nI am writing to politely request repairs fo",
+    "sentences": [
+      {
+        "text": "I am writing to politely request repairs for the heating, water leak, mold, and pest issues in the apartment. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "As reported on November 10, 2026, there has been no heat or hot water since Monday morning, with a cold radiator in the bedroom and a freezing apartment. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "Since November 12, 2026, water has been leaking from the bathroom ceiling, causing paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "As noted on November 13, 2026, there is black mold growth on a bathroom wall with an escalating odor. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "As recorded on November 14, 2026, mice droppings were found in the kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your attention to these repair requests regarding the heating, bathroom water leak, bathroom mold, and kitchen pest issues. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  },
+  {
+    "run": 8,
+    "latencyMs": 37606,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 37606 ms model=gemini-4-hydrogen\n\n\nDear Landlord, I am writing to politely req",
+    "sentences": [
+      {
+        "text": "Dear Landlord, I am writing to politely request repairs for the heating, water leak, mold, and pest issues affecting the apartment. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "As noted on November 10, 2026, there has been no heat or hot water since Monday morning, leaving the radiator in the bedroom cold and the apartment freezing. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "Since November 12, 2026, water has been leaking from the bathroom ceiling, causing paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "As recorded on November 13, 2026, black mold is growing on a bathroom wall with an escalating odor. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "Additionally, as noted on November 14, 2026, mice droppings were found in the kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your attention to these repair needs in the bedroom, bathroom, and kitchen. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  },
+  {
+    "run": 9,
+    "latencyMs": 26438,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 26438 ms model=gemini-4-hydrogen\n\n\nDear Landlord, I am respectfully writing to",
+    "sentences": [
+      {
+        "text": "Dear Landlord, I am respectfully writing to request repairs for several issues in the apartment involving heating, a bathroom water leak, bathroom mold, and kitchen pests. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "As reported on November 10, 2026, there has been no heat or hot water since Monday morning, with a cold radiator in the bedroom and a freezing apartment. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "Since November 12, 2026, water has been leaking from the bathroom ceiling, causing paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "Additionally, as noted on November 13, 2026, there is black mold growth on a bathroom wall with an escalating odor. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "Finally, as recorded on November 14, 2026, mice droppings were found in the kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your attention to addressing the heating, water leak, mold, and pest issues in the apartment. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  },
+  {
+    "run": 10,
+    "latencyMs": 62431,
+    "statusHead": "Letter (Valid) inferenceSource=in_cloud · 62431 ms model=gemini-4-hydrogen\n\n\nDear Landlord, I am writing to politely req",
+    "sentences": [
+      {
+        "text": "Dear Landlord, I am writing to politely request repairs for the heating, water leak, mold, and pest issues reported in the apartment. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "According to the November 10, 2026 record, there has been no heat or hot water since Monday morning, leaving a cold radiator in the bedroom and a freezing apartment. [b64db64b…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175"
+        ]
+      },
+      {
+        "text": "In the bathroom, water has been leaking from the ceiling since November 12, 2026, causing paint to bubble and a bucket to fill up overnight. [da59e860…]",
+        "cites": [
+          "da59e860-861f-4344-ba76-c8025c7ef36a"
+        ]
+      },
+      {
+        "text": "As noted on November 13, 2026, there is black mold growth on a bathroom wall with an escalating odor. [56f79024…]",
+        "cites": [
+          "56f79024-68e2-47d7-9b4c-7aafa86da931"
+        ]
+      },
+      {
+        "text": "As reported on November 14, 2026, mice droppings were found in kitchen cabinets this week. [d3964403…]",
+        "cites": [
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      },
+      {
+        "text": "Thank you for your help in addressing the bedroom heating, bathroom water leak and mold, and kitchen pest issues. [b64db64b…] [da59e860…] [56f79024…] [d3964403…]",
+        "cites": [
+          "b64db64b-0885-4de3-bdf9-b1d8366b5175",
+          "da59e860-861f-4344-ba76-c8025c7ef36a",
+          "56f79024-68e2-47d7-9b4c-7aafa86da931",
+          "d3964403-35b9-42ef-b666-2c4ff184f539"
+        ]
+      }
+    ]
+  }
+]

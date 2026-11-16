@@ -32,14 +32,16 @@ Edit rule: editing confirmed text moves the record to Needs Review (prior confir
 - Letter `status: Valid | Invalidated`. Editing/deleting any cited record sets it to Invalidated (regeneration required).
 - Letter fields: `id, sentences, inferenceSource (must be in_cloud), latencyMs, model, status, createdAt`.
 
-## Models (explicit names; re-verified 2026-11-16, Day-2 A1)
-- Cloud (designated for the freeze, provisional): **`gemini-4-hydrogen`** — 1/2 measured attempts valid (25,078 ms, best citation quality); if it fails at the 11/19 freeze rehearsal, designation falls back to `gemini-3.5-flash-lite` (3/3 valid, ~1.3 s). `gemini-3.8-flash` rejected (0/3). Re-check judging-window availability in early December.
+## Models (explicit names; FROZEN 2026-11-16 by pre-freeze tests, docs/freeze/FREEZE-TESTS-REPORT.md)
+- Cloud (**frozen: `gemini-3.5-flash-lite`**, explicitly named in `VITE_CLOUD_MODEL`): citation checks were clean in every valid run (0 phantom IDs, 0 uncited sentences, 0 date mismatches; manual fact check clean) on 4-record ×10 and 6-record ×3 sets, at 1.7–9.1 s. Known limit: free-tier quota 429 (15 req/min/model) under rapid repeated generation — handled by the failure-recovery UX (failure state + manual retry + records preserved), never by silent model switching.
+- `gemini-4-hydrogen` not frozen: citations equally clean (13/13 valid runs), but median latency 43 s on the 4-record set (acceptance: ≤30 s) and 2/3 runs >30 s on 6 records. `gemini-3.8-flash` rejected (0/3, 500/503). Re-check judging-window availability of the frozen model in early December.
 - On-device: Gemini Nano via Chrome Prompt API through Firebase AI Logic (no model name is chosen client-side; availability is a Chrome/profile property).
 
 ## Consents & data boundaries (unchanged, in this order)
 1. Save time: user consents that the original text syncs to Firestore. 2. Synthesis time: separate consent + exact send-preview. Disclosed boundaries (local inference / storage sync / synthesis send) are printed in the app and README. The phrase "data never leaves the device" must not appear anywhere.
 
-## Open decisions due by the freeze (2026-11-19)
-- Korean input (Day-2 A4): today it is silently translated by the on-device model. Choose (a) block/warn on non-English input, or (b) accept + disclose. Not decided on 2026-11-16.
-- Final cloud model confirmation after one more hydrogen rehearsal (above).
-- Multi-defect memos: keep single-category rule + user files second record, or split at input time. Current contract keeps the former.
+## Decisions closed 2026-11-16 (pre-freeze tests)
+- Korean input: **(b) allow + disclose** (owner decision). Non-blocking banner at input time with the fixed wording in `index.html#koreanBanner`; Korean originals get a strengthened confirm screen (dates/numbers/amounts/names highlighted next to the original); record cards always show original + user-confirmed English summary side by side. On-device calls are wrapped so an unsupported-language error (`NotSupportedError` etc.) degrades to guidance with the raw text preserved. Measured basis: `docs/freeze/korean-batch-raw.json` (Chrome 157, 2026-11-16) — digits/dates/amounts survived; one date-meaning shift (#2), one category miss (#12, no-hot-water → unknown), one name omission (supplementary case) are preserved as failure data. Not a "Korean-supported" product.
+- Cloud model: frozen to `gemini-3.5-flash-lite` (Models section above).
+- Letter failure recovery (model-independent, implemented): failure state is shown, selected records are preserved unchanged, no letter is saved, and a manual **Retry generation** button is offered. No auto-retry, no silent fallback/switching.
+- Multi-defect memos: keep single-category rule + user files the second defect as its own record (documented limitation from Day-2 A2/F1).

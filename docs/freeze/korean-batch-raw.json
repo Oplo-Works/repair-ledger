@@ -1,0 +1,98 @@
+[
+  {
+    "n": 1,
+    "expect": "heating",
+    "check": "date 11/10, unit 302, name 김철수",
+    "memo": "보일러가 고장나서 11월 10일부터 난방이 안 됩니다. 3층 302호이고 집주인 김철수 씨에게 문자로 알렸습니다.",
+    "resultText": "On-device result inferenceSource=on_device · 14019 ms\nCategory: heating (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "Tenant in apartment 302 on the 3rd floor reports heating malfunction starting November 10th and notified landlord Kim Cheol-soo via text message."
+  },
+  {
+    "n": 2,
+    "expect": "water_leak",
+    "check": "amount $450, date 11/12",
+    "memo": "욕실 천장에서 물이 새서 수리업자가 견적을 450달러라고 했습니다. 11월 12일에 시작됐어요.",
+    "resultText": "On-device result inferenceSource=on_device · 8168 ms\nCategory: water_leak (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "A tenant reported a water leak from the bathroom ceiling, and a contractor provided a quote of $450 to repair it, with work starting on November 12th."
+  },
+  {
+    "n": 3,
+    "expect": "mold",
+    "check": "negation: smell NOT severe",
+    "memo": "곰팡이가 벽에 있지만 냄새는 심하지 않습니다.",
+    "resultText": "On-device result inferenceSource=on_device · 4769 ms\nCategory: mold (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "The memo indicates mold is present on the wall, but the odor is not severe."
+  },
+  {
+    "n": 4,
+    "expect": "pest",
+    "check": "cockroaches, kitchen",
+    "memo": "부엌 서랍에서 바퀴벌레가 계속 나옵니다. 싱크대 주변에 벌레 똥도 있어요.",
+    "resultText": "On-device result inferenceSource=on_device · 5867 ms\nCategory: pest (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "A cockroach has been consistently emerging from a kitchen drawer, and there are cockroach droppings around the sink."
+  },
+  {
+    "n": 5,
+    "expect": "heating",
+    "check": "works BUT does not warm (negation distinction)",
+    "memo": "보일러가 작동하지만 방이 따뜻해지지 않습니다.",
+    "resultText": "On-device result inferenceSource=on_device · 4704 ms\nCategory: heating (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "The memo reports that the boiler is working, but the room is not getting warm."
+  },
+  {
+    "n": 6,
+    "expect": "heating",
+    "check": "not working at all",
+    "memo": "히터가 전혀 작동하지 않습니다. 집이 얼음장 같아요.",
+    "resultText": "On-device result inferenceSource=on_device · 4875 ms\nCategory: heating (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "The tenant reports that their heater is not working and the house feels like an icebox."
+  },
+  {
+    "n": 7,
+    "expect": "water_leak",
+    "check": "mixed EN/KO, date Nov 13",
+    "memo": "Kitchen sink에서 물이 leak 하고 있어요. Since Nov 13.",
+    "resultText": "On-device result inferenceSource=on_device · 4555 ms\nCategory: water_leak (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "The kitchen sink has been leaking since November 13th."
+  },
+  {
+    "n": 8,
+    "expect": "multi(mold+water_leak)",
+    "check": "two defects, date 11/8",
+    "memo": "11월 8일부터 화장실 벽에 곰팡이가 생겼고 세면대 아래에서 물도 새고 있습니다.",
+    "resultText": "On-device result inferenceSource=on_device · 6091 ms\nCategory: mold (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "Mold growth has appeared on the bathroom wall since November 8th, and water is leaking from under the sink."
+  },
+  {
+    "n": 9,
+    "expect": "unknown",
+    "check": "elevator - out of scope",
+    "memo": "엘리베이터가 고장나서 짐을 옮기기 어렵습니다.",
+    "resultText": "On-device result inferenceSource=on_device · 4584 ms\nCategory: unknown (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "The memo states that the elevator is broken, making it difficult to move belongings."
+  },
+  {
+    "n": 10,
+    "expect": "water_leak",
+    "check": "2 buckets/day, date 11/5",
+    "memo": "주방 싱크대 아래 배관에서 하루에 양동이 2개 분량 물이 샙니다. 11월 5일부터예요.",
+    "resultText": "On-device result inferenceSource=on_device · 6597 ms\nCategory: water_leak (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "A kitchen sink pipe is leaking approximately two buckets of water per day, starting November 5th."
+  },
+  {
+    "n": 11,
+    "expect": "unknown",
+    "check": "name Michael, date 11/3, $200, door lock (out of scope)",
+    "memo": "집주인 Michael에게 11월 3일 전화했고 수리비 200달러를 요청받았습니다. 현관문 자물쇠가 고장났어요.",
+    "resultText": "On-device result inferenceSource=on_device · 6771 ms\nCategory: unknown (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "A tenant called their landlord, Michael on November 3rd and was asked for a $200 repair fee because the entryway door lock is broken."
+  },
+  {
+    "n": 12,
+    "expect": "heating",
+    "check": "no hot water, 2 weeks",
+    "memo": "온수가 안 나와서 샤워를 못 하고 있습니다. 2주 됐어요.",
+    "resultText": "On-device result inferenceSource=on_device · 4238 ms\nCategory: unknown (use “unknown / Needs Review” freely — never forced)",
+    "confirmedText": "The tenant reports no hot water for two weeks, preventing them from taking showers."
+  }
+]

@@ -6,7 +6,7 @@ Built for [#BuildHybridAI 2026](https://firebasehybridaihackathon.devpost.com/) 
 
 ## Hybrid inference — where it actually runs (runtime code, not just imports)
 - On-device classification: `src/ai.ts` → `classifyOnDevice()` uses `getGenerativeModel(ai, { mode: InferenceMode.ONLY_ON_DEVICE, onDeviceParams: { promptOptions: { responseConstraint } } })`. If the device model is unavailable the SDK throws — there is **no silent cloud fallback**. The app then verifies `result.response.inferenceSource === InferenceSource.ON_DEVICE` (actual value `"on_device"`) and shows it as a badge with latency.
-- Cloud letter: `src/ai.ts` → `generateLetterInCloud()` uses `InferenceMode.ONLY_IN_CLOUD` with an **explicitly named model** (`gemini-4-hydrogen`, set via `VITE_CLOUD_MODEL`; measured comparison in `docs/day2/A1-cloud-model-compare.md` — designated provisionally for the 11/19 freeze, with `gemini-3.5-flash-lite` as the documented fallback if hydrogen fails the freeze rehearsal; re-verify judging-window availability in early December). Output is structured `{sentences:[{text, sourceRecordIds[]}]}`; `src/domain.ts:validateLetter()` checks every cited ID exists and is Confirmed — any failure discards the whole letter (no auto-retry).
+- Cloud letter: `src/ai.ts` → `generateLetterInCloud()` uses `InferenceMode.ONLY_IN_CLOUD` with an **explicitly named model** (`gemini-3.5-flash-lite`, set via `VITE_CLOUD_MODEL`; frozen 2026-11-16 by the citation-cleanliness rule in `docs/freeze/FREEZE-TESTS-REPORT.md` — hydrogen produced equally clean citations but failed the 30 s latency acceptance at multi-record scale; re-verify judging-window availability in early December). Output is structured `{sentences:[{text, sourceRecordIds[]}]}`; `src/domain.ts:validateLetter()` checks every cited ID exists and is Confirmed — any failure discards the whole letter (no auto-retry).
 - Model download/lifecycle: `prepareDeviceModel()` in `src/ai.ts` (button-triggered, per Chrome's user-activation requirement, with download progress).
 
 ## Data boundaries (disclosed exactly)
@@ -29,7 +29,9 @@ npm test                     # domain/state-machine/ID-contract unit tests
 npm run build
 ```
 
-On-device setup: enable `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input`, restart Chrome, open the app, click **“Prepare on-device model”** (first download takes several minutes). In a profile without that setup the app shows explicit unsupported guidance — that is the expected result there; it never silently falls back to the cloud. English memo input only; UI guidance is English with fixed Korean guidance text (no per-record translation calls).
+On-device setup: enable `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input`, restart Chrome, open the app, click **“Prepare on-device model”** (first download takes several minutes). In a profile without that setup the app shows explicit unsupported guidance — that is the expected result there; it never silently falls back to the cloud. English memo input is the supported path; UI guidance is English with fixed Korean guidance text (no per-record translation calls).
+
+Korean input is **not officially supported**. Measured on 2026-11-16, Chrome 157.0.8103.79 (on-device, 12-memo batch in `docs/freeze/korean-batch-raw.json`): Korean memos were classified and silently translated into English summaries — all digits (dates, $ amounts, unit numbers) survived, but one date's meaning shifted and one hot-water memo was categorized `unknown`. The app therefore allows Korean input with a non-blocking disclosure banner and a strengthened compare-before-save screen (highlighted dates/numbers/amounts/names next to the original); it is not marketed as a Korean-supported product.
 
 Sample data in the app is synthetic and labeled as such. Do not put real names/addresses/contact details in records you demo.
 

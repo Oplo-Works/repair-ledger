@@ -7,3 +7,6 @@ button { margin: 6px 6px 6px 0; padding: 8px 12px; cursor: pointer; }
 .rec { border-top: 1px solid #eee; padding: 10px 4px; } .rec.highlight { background: #fff9c4; outline: 2px solid #f9a825; }
 .sentence { margin: 8px 0; } blockquote { background: #f5f5f5; margin: 6px 0; padding: 8px 12px; }
 .consent { font-weight: 600; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 6px 0; }
+.cols > div { background: #fafafa; border: 1px solid #eee; border-radius: 6px; padding: 8px; }
+mark { background: #ffe082; padding: 0 2px; }
