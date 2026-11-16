@@ -11,6 +11,7 @@ Anything not documented here is out of scope (BUILD-PLAN v2.1). After this freez
 | `rawText` | string | User's original memo. Always preserved, never overwritten by AI or edits. |
 | `aiText` | string \| null | AI raw output (JSON string). Version 1 of the only 2 preserved versions. |
 | `confirmedText` | string \| null | User-confirmed text. Version 2 of 2. Unconfirmed AI output never enters a letter. |
+| `confirmationSource` | `"model" \| "manual" \| null` (optional, added 2026-11-16 P1) | How the confirmed text was produced: `model` = model classified, user confirmed; `manual` = user typed summary/category directly (classification-failure path). Shown honestly on the record card. Absent on pre-fix records. |
 | `category` | `heating \| water_leak \| mold \| pest \| unknown` | `unknown` = "needs review", never forced. One category per record (measured limitation: a multi-defect memo files under one category; its summary keeps both facts — users file the second defect as its own record). |
 | `occurredOn` | ISO date string, `""` if unknown | From UI input/code parsing only (primary). |
 | `location` | string, `""` if unknown | From UI input only (primary). |
@@ -43,7 +44,8 @@ Edit rule: editing confirmed text moves the record to Needs Review (prior confir
 1. Save time: user consents that the original text syncs to Firestore. 2. Synthesis time: separate consent + exact send-preview. Disclosed boundaries (local inference / storage sync / synthesis send) are printed in the app and README. The phrase "data never leaves the device" must not appear anywhere.
 
 ## Change Log
-- 2026-11-16: Initial freeze (this version). Basis: Day-1 gates, Day-2 A1–A7/B8–B9, pre-freeze Tests 1–3. No post-freeze changes yet.
+- 2026-11-16: Initial freeze (this version). Basis: Day-1 gates, Day-2 A1–A7/B8–B9, pre-freeze Tests 1–3.
+- 2026-11-16 (P1 fix, owner-directed): **additive optional field `confirmationSource: "model" | "manual" | null`** on records. Reason: live-use report proved the classification-failure path could never be saved (manual entry never reached state, so `canConfirm` stayed false) — the manual path is part of the frozen design (Korean/failure handling), so this restores the frozen intent rather than changing it. Impact: backward-compatible (old records simply lack the field; letter validation, state machine, schemas unchanged); records confirmed without a model result are honestly labeled "Entered manually by user" on the record card. Re-verification: unit tests 25/25 incl. new P1 regression block, Rules 11/11, deployed manual-path verification (see commit history).
 
 ## Decisions closed 2026-11-16 (pre-freeze tests)
 - Korean input: **(b) allow + disclose** (owner decision). Non-blocking banner at input time with the fixed wording in `index.html#koreanBanner`; Korean originals get a strengthened confirm screen (dates/numbers/amounts/names highlighted next to the original); record cards always show original + user-confirmed English summary side by side. On-device calls are wrapped so an unsupported-language error (`NotSupportedError` etc.) degrades to guidance with the raw text preserved. Measured basis: `docs/freeze/korean-batch-raw.json` (Chrome 157, 2026-11-16) — digits/dates/amounts survived; one date-meaning shift (#2), one category miss (#12, no-hot-water → unknown), one name omission (supplementary case) are preserved as failure data. Not a "Korean-supported" product.

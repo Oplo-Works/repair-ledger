@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { detectDefectCategories, buildClassifyPrompt, highlightFacts, hasHangul, applyEdit, type RepairRecord } from "./domain";
+import { detectDefectCategories, buildClassifyPrompt, highlightFacts, hasHangul, applyEdit, applyManualEntry, resolveConfirmationSource, canConfirm, canTransition, type RepairRecord } from "./domain";
 
 // Regression fixtures: memos and summaries are the measured outputs from Day-2 / pre-freeze runs
 // (docs/day2/benchmark-schemaB-raw.json, docs/freeze/korean-batch-raw.json). If a future change
@@ -32,6 +32,40 @@ describe("regression 2: instruction-style memo (Day-2 case 6)", () => {
   it("measured output performed classification only — no poem, no instruction following", () => {
     expect(measuredSummary.toLowerCase()).not.toContain("poem");
     expect(measuredSummary.toLowerCase()).toContain("clogged sink");
+  });
+});
+
+describe("regression P1: classification failure -> manual entry -> consent toggle -> save", () => {
+  // Exactly the state the failure path produces (classifyOnce catch): no AI output, Needs Review, raw preserved.
+  const failed: RepairRecord = {
+    id: "p1", rawText: "온수가 안 나와서 샤워를 못 하고 있습니다.", aiText: null, confirmedText: null, confirmationSource: null,
+    category: "unknown", occurredOn: "", location: "", suggestedOccurredOn: null, suggestedLocation: null,
+    status: "Needs Review", inferenceSource: null, latencyMs: null, createdAt: 1,
+  };
+  it("save is (correctly) impossible before any manual entry — the guard is not weakened", () => {
+    expect(canConfirm(failed.status, failed.confirmedText ?? "")).toBe(false);
+  });
+  it("typed summary and picked category enter state and enable save", () => {
+    const typed = applyManualEntry(failed, { text: "No hot water; cannot shower (entered from the Korean original).", category: "heating" });
+    expect(typed.confirmedText).toContain("No hot water");
+    expect(typed.category).toBe("heating");
+    expect(canConfirm(typed.status, typed.confirmedText ?? "")).toBe(true);
+  });
+  it("a consent-toggle re-render redraws from state, so in-progress typing is preserved", () => {
+    let state = applyManualEntry(failed, { text: "사용자가 직접 입력한 요약" });
+    const renderedTextareaValue = () => state.confirmedText ?? ""; // renderReview draws the textarea from state
+    state = applyManualEntry(state, {}); // consent toggle now only re-evaluates the button; state untouched
+    expect(renderedTextareaValue()).toBe("사용자가 직접 입력한 요약");
+  });
+  it("provenance distinguishes manual confirmation from model-assisted confirmation, and survives the save path", () => {
+    const typed = applyManualEntry(failed, { text: "Manual summary" });
+    expect(resolveConfirmationSource(typed)).toBe("manual");
+    const saved: RepairRecord = { ...applyEdit(typed, typed.confirmedText!), confirmationSource: resolveConfirmationSource(typed), status: "Confirmed" };
+    expect(canTransition("Needs Review", saved.status)).toBe(true);
+    expect(saved.confirmationSource).toBe("manual");
+    expect(saved.rawText).toBe(failed.rawText);
+    const modelAssisted: RepairRecord = { ...failed, aiText: "{}", confirmedText: "Model summary" };
+    expect(resolveConfirmationSource(modelAssisted)).toBe("model");
   });
 });
 

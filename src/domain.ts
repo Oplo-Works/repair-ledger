@@ -4,11 +4,14 @@ export type Category = (typeof CATEGORIES)[number];
 
 export type RecordStatus = "Draft" | "Processing" | "Needs Review" | "Confirmed" | "Included in Letter";
 
+export type ConfirmationSource = "model" | "manual";
+
 export interface RepairRecord {
   id: string;
   rawText: string; // original user memo, always preserved
   aiText: string | null; // AI raw suggestion (version 1 of 2 preserved)
   confirmedText: string | null; // user-confirmed text (version 2 of 2)
+  confirmationSource?: ConfirmationSource | null; // additive 2026-11-16 (P1 fix, DATA-CONTRACT Change Log); absent on pre-fix records
   category: Category;
   occurredOn: string; // ISO date from UI/code parsing (primary), "" if unknown
   location: string; // from UI input (primary)
@@ -38,6 +41,22 @@ const TRANSITIONS: Record<RecordStatus, RecordStatus[]> = {
   Confirmed: ["Included in Letter", "Needs Review"], // edit of a confirmed record invalidates its confirmation
   "Included in Letter": ["Needs Review"],
 };
+
+/** Manual entry on the review screen (the classification-failure path): user-typed summary/category become the record state immediately, so no re-render can lose them. */
+export function applyManualEntry(rec: RepairRecord, entry: { text?: string; category?: Category; occurredOn?: string; location?: string }): RepairRecord {
+  return {
+    ...rec,
+    confirmedText: entry.text !== undefined ? entry.text : rec.confirmedText,
+    category: entry.category !== undefined ? entry.category : rec.category,
+    occurredOn: entry.occurredOn !== undefined ? entry.occurredOn : rec.occurredOn,
+    location: entry.location !== undefined ? entry.location : rec.location,
+  };
+}
+
+/** "manual" = confirmed without any successful model classification; "model" = model classified and the user confirmed/checked it. */
+export function resolveConfirmationSource(rec: RepairRecord): ConfirmationSource {
+  return rec.aiText ? "model" : "manual";
+}
 
 /** Confirm & Save is only legal from Needs Review with non-empty confirmed text (prevents saving a still-Processing or empty record). */
 export function canConfirm(status: RecordStatus, confirmedText: string): boolean {

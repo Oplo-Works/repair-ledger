@@ -1,7 +1,7 @@
 import "./style.css";
 import { configMissing, appCheckConfigured, db, ensureAnonUid, CLOUD_MODEL } from "./firebase";
 import { prepareDeviceModel, classifyOnDevice, generateLetterInCloud } from "./ai";
-import { applyEdit, letterNeedsInvalidation, sortTimeline, hasHangul, highlightFacts, detectDefectCategories, canConfirm, type Letter, type RepairRecord } from "./domain";
+import { applyEdit, letterNeedsInvalidation, sortTimeline, hasHangul, highlightFacts, detectDefectCategories, canConfirm, applyManualEntry, resolveConfirmationSource, CATEGORIES, type Letter, type RepairRecord } from "./domain";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const el = {
@@ -41,7 +41,9 @@ void renderEnv();
 // Diagnostic availability check only; gate evidence comes from a real SDK call in classifyOnDevice().
 
 // ---- Firestore (single save path, offline persistence configured in firebase.ts) ----
+let saveAttempted = false; // until the first save of this session, the save-state label stays neutral ("No saves yet")
 async function persistRecord(rec: RepairRecord) {
+  saveAttempted = true;
   if (!db || !uid) throw new Error("Firestore unavailable: Firebase config missing.");
   const { doc, setDoc } = await import("firebase/firestore");
   el.saveStatus.textContent = "Save state: device reflected → sync pending…";
@@ -73,9 +75,12 @@ async function initStore() {
   onSnapshot(collection(db!, "users", uid, "records"), (snap) => {
     records = snap.docs.map((d) => d.data() as RepairRecord);
     // Save-state 4 stages (BUILD-PLAN): device reflected / sync pending / server reflected / sync failed.
-    el.saveStatus.textContent = snap.metadata.hasPendingWrites
-      ? "Save state: 1) device reflected → 2) sync pending (기기 반영 / 동기화 대기)"
-      : snap.metadata.fromCache ? "Save state: 1) device reflected (기기 반영 — cached)" : "Save state: 3) server reflected (서버 반영)";
+    // Before any save in this session, stay neutral — an initial (possibly empty) snapshot is not a save.
+    el.saveStatus.textContent = !saveAttempted && !snap.metadata.hasPendingWrites
+      ? "Save state: no saves yet this session"
+      : snap.metadata.hasPendingWrites
+        ? "Save state: 1) device reflected → 2) sync pending (기기 반영 / 동기화 대기)"
+        : snap.metadata.fromCache ? "Save state: 1) device reflected (기기 반영 — cached)" : "Save state: 3) server reflected (서버 반영)";
     renderRecords();
   }, (e) => { el.saveStatus.textContent = `Save state: 4) sync failed (동기화 실패) — ${String(e)}`; });
   onSnapshot(collection(db!, "users", uid, "letters"), (snap) => {
@@ -107,7 +112,7 @@ el.classifyBtn.addEventListener("click", async () => {
   const rawText = el.memo.value.trim();
   if (!rawText) { el.classifyResult.innerHTML = `<span class="warn">Enter an English memo first.</span>`; return; }
   const rec: RepairRecord = {
-    id: crypto.randomUUID(), rawText, aiText: null, confirmedText: null, category: "unknown",
+    id: crypto.randomUUID(), rawText, aiText: null, confirmedText: null, confirmationSource: null, category: "unknown",
     occurredOn: el.date.value, location: el.loc.value.trim(), suggestedOccurredOn: null, suggestedLocation: null,
     status: "Processing", inferenceSource: null, latencyMs: null, createdAt: Date.now(),
   };
@@ -154,22 +159,54 @@ async function classifyOnce(rec: RepairRecord) {
 }
 
 // ---- step 2: review / confirm / save (Consent 1) ----
+function updateConfirmBtn() {
+  if (!current) { el.confirmBtn.disabled = true; return; }
+  el.confirmBtn.disabled = !(el.consent1.checked && !configMissing && canConfirm(current.status, current.confirmedText ?? ""));
+}
+
 function renderReview() {
   if (!current) return;
   const r = current;
   const korean = hasHangul(r.rawText);
+  const manualEntryNote = !r.aiText && r.status === "Needs Review"
+    ? `<p class="warn">Classification did not produce a result for this record. You can still save it: type the summary below, pick a category, and check Consent 1. Such a record is marked <b>“Entered manually by user”</b>.</p>` : "";
   el.reviewBox.innerHTML =
     (korean ? `<p class="warn">한국어 입력은 공식 지원되지 않습니다. 아래 원문에서 <mark>날짜·숫자·금액·이름</mark>을 확정 요약과 나란히 대조해 주세요. 장소: <b>${escapeHtml(r.location || "(unknown)")}</b> · 날짜: <b>${r.occurredOn || "(unknown)"}</b></p>` : "") +
+    manualEntryNote +
     `<b>Original (always preserved):</b><br/><blockquote>${korean ? highlightFacts(escapeHtml(r.rawText)) : escapeHtml(r.rawText)}</blockquote>` +
     `<label>Confirmed text (edit freely — editing invalidates any prior confirmation)<br/><textarea id="confirmedText" rows="3">${escapeHtml(r.confirmedText ?? "")}</textarea></label><br/>` +
-    `Category: <b>${r.category}</b> · Date: ${r.occurredOn || "(unknown)"} · Location: ${escapeHtml(r.location || "(unknown)")}<br/>` +
+    `<label>Category <select id="categorySelect">${CATEGORIES.map((c) => `<option value="${c}" ${c === r.category ? "selected" : ""}>${c}</option>`).join("")}</select></label> ` +
+    `<label>Date <input id="reviewDate" type="date" value="${escapeHtml(r.occurredOn)}" /></label> ` +
+    `<label>Location <input id="reviewLocation" type="text" value="${escapeHtml(r.location)}" /></label><br/>` +
     (r.suggestedOccurredOn || r.suggestedLocation ? `<span class="note">Nano suggestions only (not applied): date=${r.suggestedOccurredOn ?? "-"}, location=${escapeHtml(r.suggestedLocation ?? "-")}. Your UI inputs above remain primary.</span><br/>` : "") +
     (() => { const detected = detectDefectCategories(r.rawText); return detected.length > 1
       ? `<p class="warn">This memo appears to mention more than one defect type (${detected.join(", ")}), but a record is filed under one category only (<b>${r.category}</b>). Check that the summary below keeps every defect — and if another defect needs its own timeline entry, file it as a separate record after saving this one.</p>` : ""; })() +
-    badge(r) + ` Status: <b>${r.status}</b>`;
-  el.confirmBtn.disabled = !(el.consent1.checked && !configMissing && canConfirm(r.status, r.confirmedText ?? ""));
+    badge(r) + ` Status: <b>${r.status}</b>` +
+    (r.confirmationSource ? `<br/><span class="badge">${r.confirmationSource === "manual" ? "Entered manually by user (no model classification)" : "Model-classified, user-confirmed"}</span>` : "");
+  // Manual entry wiring: every keystroke/change updates record state immediately, so any
+  // re-render (consent toggle, snapshot, status change) redraws from state and cannot wipe input.
+  ($("confirmedText") as HTMLTextAreaElement).addEventListener("input", (e) => {
+    if (!current) return;
+    current = applyManualEntry(current, { text: (e.target as HTMLTextAreaElement).value });
+    updateConfirmBtn();
+  });
+  ($("categorySelect") as HTMLSelectElement).addEventListener("change", (e) => {
+    if (!current) return;
+    current = applyManualEntry(current, { category: (e.target as HTMLSelectElement).value as RepairRecord["category"] });
+  });
+  ($("reviewDate") as HTMLInputElement).addEventListener("input", (e) => {
+    if (!current) return;
+    current = applyManualEntry(current, { occurredOn: (e.target as HTMLInputElement).value });
+  });
+  ($("reviewLocation") as HTMLInputElement).addEventListener("input", (e) => {
+    if (!current) return;
+    current = applyManualEntry(current, { location: (e.target as HTMLInputElement).value });
+  });
+  updateConfirmBtn();
 }
-el.consent1.addEventListener("change", () => renderReview());
+// Consent toggle must NOT re-render the review (that used to risk wiping in-progress typing);
+// it only re-evaluates the save button against already-synced state.
+el.consent1.addEventListener("change", () => updateConfirmBtn());
 
 el.confirmBtn.addEventListener("click", async () => {
   if (!current || !el.consent1.checked) return;
@@ -180,6 +217,7 @@ el.confirmBtn.addEventListener("click", async () => {
   }
   const wasConfirmed = current.status === "Confirmed" || current.status === "Included in Letter";
   current = applyEdit(current, edited);
+  current.confirmationSource = resolveConfirmationSource(current);
   if (wasConfirmed) await invalidateLettersFor(current.id);
   // Non-blocking save: reflect on device immediately, let the snapshot listener report sync stages.
   // The screen never waits for the server acknowledgement (offline saves settle as "sync pending").
@@ -204,6 +242,7 @@ function renderRecords() {
       <label><input type="checkbox" data-select="${r.id}" ${selected.has(r.id) ? "checked" : ""} ${r.status !== "Confirmed" && r.status !== "Included in Letter" ? "disabled" : ""}/> include in letter</label>
       <b>[${escapeHtml(r.occurredOn || "date unknown")}] ${escapeHtml(r.location || "")} — ${r.category}</b> · ${r.status} ${badge(r)}<br/>
       <div class="cols"><div><i>Original:</i><br/>${escapeHtml(r.rawText)}</div><div><i>Confirmed summary (user-checked):</i><br/>${escapeHtml(r.confirmedText ?? "(not confirmed yet)")}</div></div>
+      ${r.confirmationSource === "manual" ? `<span class="badge">Entered manually by user (no model classification)</span>` : r.confirmationSource === "model" ? `<span class="badge">Model-classified, user-confirmed</span>` : ""}
       <button data-edit="${r.id}">Edit</button> <button data-del="${r.id}">Delete</button>
     </div>`;
   }).join("");
