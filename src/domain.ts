@@ -39,6 +39,11 @@ const TRANSITIONS: Record<RecordStatus, RecordStatus[]> = {
   "Included in Letter": ["Needs Review"],
 };
 
+/** Confirm & Save is only legal from Needs Review with non-empty confirmed text (prevents saving a still-Processing or empty record). */
+export function canConfirm(status: RecordStatus, confirmedText: string): boolean {
+  return status === "Needs Review" && confirmedText.trim().length > 0;
+}
+
 export function canTransition(from: RecordStatus, to: RecordStatus): boolean {
   return TRANSITIONS[from].includes(to);
 }
@@ -89,6 +94,32 @@ export function assertOnDeviceCapable(hasLanguageModel: boolean, availability: s
     throw new Error("On-device model unavailable: Chrome Prompt API (LanguageModel) not present in this browser/profile. Request was NOT sent to the cloud (no silent fallback).");
   if (availability === "unavailable")
     throw new Error("On-device model unavailable: LanguageModel.availability() = 'unavailable' in this profile. Request was NOT sent to the cloud (no silent fallback).");
+}
+
+export const hasHangul = (s: string) => /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(s);
+
+/** Highlight dates, numbers, amounts, unit/room numbers and Latin-script names for side-by-side comparison. Input must already be HTML-escaped. */
+export function highlightFacts(escaped: string): string {
+  return escaped.replace(/(\d+\s*월\s*\d+\s*일|\d+\s*월|\d+\s*일|\d+\s*달러|\$\s*\d+|\d+\s*층|\d+\s*호|\d+\s*개|\d+\s*주일?|November\s*\d+|[A-Z][a-z]+)/g, "<mark>$1</mark>");
+}
+
+const DEFECT_KEYWORDS: Record<Exclude<Category, "unknown">, string[]> = {
+  heating: ["heat", "hot water", "radiator", "boiler", "heater", "heating", "freezing", "warm", "난방", "보일러", "히터", "온수"],
+  water_leak: ["leak", "dripping", "faucet", "ceiling", "bucket", "seeping", "clogged", "누수", "물이 새", "배관", "새고"],
+  mold: ["mold", "mould", "musty", "black spots", "곰팡이"],
+  pest: ["cockroach", "mice", "mouse", "droppings", "pest", "bugs", "바퀴벌레", "벌레", "쥐"],
+};
+
+/** Deterministic keyword scan (app code, not the model) used to warn about multi-defect memos. */
+export function detectDefectCategories(text: string): Category[] {
+  const t = text.toLowerCase();
+  return (Object.keys(DEFECT_KEYWORDS) as (keyof typeof DEFECT_KEYWORDS)[]).filter((c) => DEFECT_KEYWORDS[c].some((k) => t.includes(k)));
+}
+
+/** The exact on-device prompt (Schema B). Kept in domain so regression tests pin its behavior contract. */
+export function buildClassifyPrompt(rawText: string): string {
+  return `Classify this NYC tenant repair memo into exactly one category (heating, water_leak, mold, pest, unknown). ` +
+    `Use "unknown" if it does not clearly fit — never force a category. Write a one-sentence factual summary using ONLY facts in the memo. Memo:\n"""${rawText}"""`;
 }
 
 /** A letter must be invalidated when any record it cites is edited or deleted. */

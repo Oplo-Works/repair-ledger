@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canTransition, applyEdit, sortTimeline, validateLetter, letterNeedsInvalidation, assertOnDeviceCapable, type RepairRecord, type Letter } from "./domain";
+import { canTransition, applyEdit, sortTimeline, validateLetter, letterNeedsInvalidation, assertOnDeviceCapable, canConfirm, type RepairRecord, type Letter } from "./domain";
 
 const rec = (over: Partial<RepairRecord> = {}): RepairRecord => ({
   id: "r1", rawText: "No heat since Monday", aiText: null, confirmedText: null,
@@ -18,6 +18,13 @@ describe("state machine", () => {
   it("forbids skipping confirmation", () => {
     expect(canTransition("Draft", "Confirmed")).toBe(false);
     expect(canTransition("Processing", "Confirmed")).toBe(false);
+  });
+  it("confirm is blocked while Processing or with empty text (Day-3 fresh-profile finding)", () => {
+    expect(canConfirm("Processing", "some summary")).toBe(false);
+    expect(canConfirm("Needs Review", "")).toBe(false);
+    expect(canConfirm("Needs Review", "  ")).toBe(false);
+    expect(canConfirm("Needs Review", "Checked summary")).toBe(true);
+    expect(canConfirm("Confirmed", "Checked summary")).toBe(false);
   });
   it("editing invalidates confirmation and preserves raw text", () => {
     const edited = applyEdit(rec(), "Edited by user");

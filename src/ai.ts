@@ -1,6 +1,6 @@
 import { getAI, getGenerativeModel, GoogleAIBackend, InferenceMode, InferenceSource, Schema, type GenerativeModel } from "firebase/ai";
 import { getApp, CLOUD_MODEL } from "./firebase";
-import { CATEGORIES, validateLetter, assertOnDeviceCapable, type Category, type LetterSentence, type RepairRecord } from "./domain";
+import { CATEGORIES, validateLetter, assertOnDeviceCapable, buildClassifyPrompt, type Category, type LetterSentence, type RepairRecord } from "./domain";
 
 async function guardOnDevice() {
   const lm = (globalThis as { LanguageModel?: { availability(): Promise<string> } }).LanguageModel;
@@ -78,10 +78,7 @@ export interface ClassifyResult {
 export async function classifyOnDevice(rawText: string): Promise<ClassifyResult> {
   await guardOnDevice(); // must precede generateContent: without it the SDK silently cloud-calls when LanguageModel is absent
   const t0 = performance.now();
-  const result = await getLocalModel().generateContent(
-    `Classify this NYC tenant repair memo into exactly one category (heating, water_leak, mold, pest, unknown). ` +
-    `Use "unknown" if it does not clearly fit — never force a category. Write a one-sentence factual summary using ONLY facts in the memo. Memo:\n"""${rawText}"""`,
-  );
+  const result = await getLocalModel().generateContent(buildClassifyPrompt(rawText));
   const latencyMs = Math.round(performance.now() - t0);
   const source = result.response.inferenceSource;
   // Gate criterion: the actual response value, not the requested mode.

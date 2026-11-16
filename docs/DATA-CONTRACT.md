@@ -1,6 +1,8 @@
-# Data Contract — DRAFT for the 2026-11-19 freeze (prepared 2026-11-16)
+# Data Contract — FROZEN
 
-Anything not documented here by 2026-11-19 is out of scope (BUILD-PLAN v2.1). Changes after the freeze require a written note in this file with date and reason.
+**Freeze date: 2026-11-16** (brought forward from the planned 2026-11-19; all pre-freeze tests completed and the three open items closed — see "Decisions closed" below; no open items remain).
+
+Anything not documented here is out of scope (BUILD-PLAN v2.1). After this freeze, schema/contract changes are **prohibited**. The only exceptions are changes forced by external factors (e.g. the frozen cloud model becoming unavailable during the 2026-12-10–16 judging window); any such change must (1) be recorded in the Change Log at the bottom of this file with date, reason, and impact range, and (2) re-run the citation/quality verification from `docs/freeze/FREEZE-TESTS-REPORT.md` before use. Internal preference is never a valid reason to reopen this contract.
 
 ## Record (`users/{uid}/records/{id}`, Firestore — the only save path, offline persistence on)
 | Field | Type | Rule |
@@ -39,6 +41,9 @@ Edit rule: editing confirmed text moves the record to Needs Review (prior confir
 
 ## Consents & data boundaries (unchanged, in this order)
 1. Save time: user consents that the original text syncs to Firestore. 2. Synthesis time: separate consent + exact send-preview. Disclosed boundaries (local inference / storage sync / synthesis send) are printed in the app and README. The phrase "data never leaves the device" must not appear anywhere.
+
+## Change Log
+- 2026-11-16: Initial freeze (this version). Basis: Day-1 gates, Day-2 A1–A7/B8–B9, pre-freeze Tests 1–3. No post-freeze changes yet.
 
 ## Decisions closed 2026-11-16 (pre-freeze tests)
 - Korean input: **(b) allow + disclose** (owner decision). Non-blocking banner at input time with the fixed wording in `index.html#koreanBanner`; Korean originals get a strengthened confirm screen (dates/numbers/amounts/names highlighted next to the original); record cards always show original + user-confirmed English summary side by side. On-device calls are wrapped so an unsupported-language error (`NotSupportedError` etc.) degrades to guidance with the raw text preserved. Measured basis: `docs/freeze/korean-batch-raw.json` (Chrome 157, 2026-11-16) — digits/dates/amounts survived; one date-meaning shift (#2), one category miss (#12, no-hot-water → unknown), one name omission (supplementary case) are preserved as failure data. Not a "Korean-supported" product.

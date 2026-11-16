@@ -4,7 +4,8 @@ textarea { width: 100%; } input[type="text"] { width: 60%; }
 button { margin: 6px 6px 6px 0; padding: 8px 12px; cursor: pointer; }
 .badge { background: #e8f5e9; border: 1px solid #81c784; border-radius: 12px; padding: 1px 8px; font-size: 12px; white-space: nowrap; }
 .warn { color: #b71c1c; } .note, .ko { color: #555; font-size: 14px; }
-.rec { border-top: 1px solid #eee; padding: 10px 4px; } .rec.highlight { background: #fff9c4; outline: 2px solid #f9a825; }
+.rec { border-top: 1px solid #eee; border-left: 3px solid #90a4ae; padding: 10px 4px 10px 12px; margin-left: 6px; } .rec.highlight { background: #fff9c4; outline: 2px solid #f9a825; }
+.tl-group { margin: 18px 0 4px; color: #37474f; font-size: 15px; }
 .sentence { margin: 8px 0; } blockquote { background: #f5f5f5; margin: 6px 0; padding: 8px 12px; }
 .consent { font-weight: 600; }
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 6px 0; }

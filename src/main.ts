@@ -1,7 +1,7 @@
 import "./style.css";
 import { configMissing, appCheckConfigured, db, ensureAnonUid, CLOUD_MODEL } from "./firebase";
 import { prepareDeviceModel, classifyOnDevice, generateLetterInCloud } from "./ai";
-import { applyEdit, letterNeedsInvalidation, sortTimeline, type Letter, type RepairRecord } from "./domain";
+import { applyEdit, letterNeedsInvalidation, sortTimeline, hasHangul, highlightFacts, detectDefectCategories, canConfirm, type Letter, type RepairRecord } from "./domain";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const el = {
@@ -116,9 +116,24 @@ el.classifyBtn.addEventListener("click", async () => {
   const started = Date.now();
   el.classifyResult.textContent = modelReady ? "Running on-device…" : "Model not marked ready — attempting ONLY_ON_DEVICE call anyway (it will throw if unavailable, no fallback).";
   const timer = setInterval(() => {
-    el.classifyResult.textContent = `Running on-device… ${Math.round((Date.now() - started) / 1000)}s (first call in a new profile/origin can take ~20s; no cloud fallback is running)`;
+    el.classifyResult.textContent = `Running on-device… ${Math.round((Date.now() - started) / 1000)}s (first call in a new profile can include the model download and take minutes; no cloud fallback is running)`;
   }, 1000);
-  try { await classifyOnce(rec); } finally { clearInterval(timer); }
+  try {
+    // A generateContent() call made before initializeDeviceModel() can wait indefinitely in a fresh
+    // profile (measured Day-3: >185 s), because the download is only kicked off by the gesture-gated
+    // initialize call. So the classify click itself prepares the model first when needed.
+    if (!modelReady) {
+      el.modelStatus.textContent = "Preparing on-device model (download may take several minutes)…";
+      await prepareDeviceModel((pct) => { el.downloadProgress.textContent = `Download progress: ${pct}%`; });
+      modelReady = true;
+      el.modelStatus.innerHTML = `On-device model: <b>Ready</b>`;
+    }
+    await classifyOnce(rec);
+  } catch (e) {
+    rec.status = "Needs Review";
+    el.classifyResult.innerHTML = `<span class="warn">On-device model preparation failed: ${String(e)}<br/>Raw text preserved as “Needs Review”. No cloud request was sent.</span>`;
+    renderReview();
+  } finally { clearInterval(timer); }
 });
 
 async function classifyOnce(rec: RepairRecord) {
@@ -139,12 +154,6 @@ async function classifyOnce(rec: RepairRecord) {
 }
 
 // ---- step 2: review / confirm / save (Consent 1) ----
-const hasHangul = (s: string) => /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(s);
-// Highlight dates, numbers, amounts, unit/room numbers and Latin-script names for side-by-side comparison.
-function highlightFacts(escaped: string): string {
-  return escaped.replace(/(\d+\s*월\s*\d+\s*일|\d+\s*월|\d+\s*일|\d+\s*달러|\$\s*\d+|\d+\s*층|\d+\s*호|\d+\s*개|\d+\s*주일?|November\s*\d+|[A-Z][a-z]+)/g, "<mark>$1</mark>");
-}
-
 function renderReview() {
   if (!current) return;
   const r = current;
@@ -155,14 +164,20 @@ function renderReview() {
     `<label>Confirmed text (edit freely — editing invalidates any prior confirmation)<br/><textarea id="confirmedText" rows="3">${escapeHtml(r.confirmedText ?? "")}</textarea></label><br/>` +
     `Category: <b>${r.category}</b> · Date: ${r.occurredOn || "(unknown)"} · Location: ${escapeHtml(r.location || "(unknown)")}<br/>` +
     (r.suggestedOccurredOn || r.suggestedLocation ? `<span class="note">Nano suggestions only (not applied): date=${r.suggestedOccurredOn ?? "-"}, location=${escapeHtml(r.suggestedLocation ?? "-")}. Your UI inputs above remain primary.</span><br/>` : "") +
+    (() => { const detected = detectDefectCategories(r.rawText); return detected.length > 1
+      ? `<p class="warn">This memo appears to mention more than one defect type (${detected.join(", ")}), but a record is filed under one category only (<b>${r.category}</b>). Check that the summary below keeps every defect — and if another defect needs its own timeline entry, file it as a separate record after saving this one.</p>` : ""; })() +
     badge(r) + ` Status: <b>${r.status}</b>`;
-  el.confirmBtn.disabled = !(el.consent1.checked && !configMissing);
+  el.confirmBtn.disabled = !(el.consent1.checked && !configMissing && canConfirm(r.status, r.confirmedText ?? ""));
 }
 el.consent1.addEventListener("change", () => renderReview());
 
 el.confirmBtn.addEventListener("click", async () => {
   if (!current || !el.consent1.checked) return;
-  const edited = ($("confirmedText") as HTMLTextAreaElement).value;
+  const edited = ($("confirmedText") as HTMLTextAreaElement | null)?.value ?? "";
+  if (!canConfirm(current.status, edited)) {
+    el.saveStatus.textContent = `Cannot save yet: the record must be in “Needs Review” with non-empty confirmed text (current status: ${current.status}). Wait for classification to finish and check the summary.`;
+    return;
+  }
   const wasConfirmed = current.status === "Confirmed" || current.status === "Included in Letter";
   current = applyEdit(current, edited);
   if (wasConfirmed) await invalidateLettersFor(current.id);
@@ -178,13 +193,20 @@ el.confirmBtn.addEventListener("click", async () => {
 function renderRecords() {
   const sorted = sortTimeline(records.length ? records : current ? [current] : []);
   if (!sorted.length) { el.recordList.textContent = "No records."; renderLetterPreview(); return; }
-  el.recordList.innerHTML = sorted.map((r) =>
+  // Timeline is sorted and grouped by app code only — the cloud never builds the timeline.
+  let lastGroup = "";
+  el.recordList.innerHTML = `<p class="note">Timeline: ${sorted.length} record(s), sorted by occurrence date (app code). Statuses move Draft → Processing → Needs Review → Confirmed → Included in Letter.</p>` + sorted.map((r) => {
+    const group = r.occurredOn ? r.occurredOn.slice(0, 7) : "date-unknown";
+    const header = group !== lastGroup ? `<h3 class="tl-group">${group === "date-unknown" ? "Date unknown" : group}</h3>` : "";
+    lastGroup = group;
+    return header +
     `<div class="rec" id="rec-${r.id}">
       <label><input type="checkbox" data-select="${r.id}" ${selected.has(r.id) ? "checked" : ""} ${r.status !== "Confirmed" && r.status !== "Included in Letter" ? "disabled" : ""}/> include in letter</label>
       <b>[${escapeHtml(r.occurredOn || "date unknown")}] ${escapeHtml(r.location || "")} — ${r.category}</b> · ${r.status} ${badge(r)}<br/>
       <div class="cols"><div><i>Original:</i><br/>${escapeHtml(r.rawText)}</div><div><i>Confirmed summary (user-checked):</i><br/>${escapeHtml(r.confirmedText ?? "(not confirmed yet)")}</div></div>
       <button data-edit="${r.id}">Edit</button> <button data-del="${r.id}">Delete</button>
-    </div>`).join("");
+    </div>`;
+  }).join("");
   el.recordList.querySelectorAll("[data-select]").forEach((c) => c.addEventListener("change", (e) => {
     const id = (e.target as HTMLInputElement).dataset.select!;
     (e.target as HTMLInputElement).checked ? selected.add(id) : selected.delete(id);
