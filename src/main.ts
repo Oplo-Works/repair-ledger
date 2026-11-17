@@ -153,7 +153,7 @@ async function classifyOnce(rec: RepairRecord) {
     rec.status = "Needs Review"; // raw text preserved on failure
     const unsupportedLang = /NotSupportedError|not supported|unsupported/i.test(String(e)) || /NotSupportedError/.test((e as Error)?.name ?? "");
     el.classifyResult.innerHTML = `<span class="warn">On-device classification failed: ${String(e)}<br/>Raw text preserved as “Needs Review”. No silent cloud fallback was used.` +
-      (unsupportedLang ? `<br/>한국어 입력은 공식 지원되지 않습니다. 온디바이스 모델이 이 언어를 지원하지 않을 수 있습니다. 원문은 보존됐으니 영어로 다시 입력하거나 직접 분류·요약을 입력해 주세요.` : "") +
+      (unsupportedLang ? `<br/>Korean input is not officially supported. The on-device model may not support this language. Your original text is preserved — please enter it in English or type the classification and summary yourself.` : "") +
       `</span>`;
   }
   renderReview();
@@ -172,7 +172,7 @@ function renderReview() {
   const manualEntryNote = !r.aiText && r.status === "Needs Review"
     ? `<p class="warn">Classification did not produce a result for this record. You can still save it: type the summary below, pick a category, and check Consent 1. Such a record is marked <b>“Entered manually by user”</b>.</p>` : "";
   el.reviewBox.innerHTML =
-    (korean ? `<p class="warn">한국어 입력은 공식 지원되지 않습니다. 아래 원문에서 <mark>날짜·숫자·금액·이름</mark>을 확정 요약과 나란히 대조해 주세요. 장소: <b>${escapeHtml(r.location || "(unknown)")}</b> · 날짜: <b>${r.occurredOn || "(unknown)"}</b></p>` : "") +
+    (korean ? `<p class="warn">Korean input is not officially supported. Compare the <mark>dates, numbers, amounts, names</mark> in the original below against the confirmed summary. Location: <b>${escapeHtml(r.location || "(unknown)")}</b> · Date: <b>${r.occurredOn || "(unknown)"}</b></p>` : "") +
     manualEntryNote +
     `<b>Original (always preserved):</b><br/><blockquote>${korean ? highlightFacts(escapeHtml(r.rawText)) : escapeHtml(r.rawText)}</blockquote>` +
     `<label>Confirmed text (edit freely — editing invalidates any prior confirmation)<br/><textarea id="confirmedText" rows="3">${escapeHtml(r.confirmedText ?? "")}</textarea></label><br/>` +
@@ -225,8 +225,8 @@ el.confirmBtn.addEventListener("click", async () => {
   // The screen never waits for the server acknowledgement (offline saves settle as "sync pending").
   current.status = "Confirmed";
   el.saveStatus.dataset.stage = "device";
-  el.saveStatus.textContent = "Save state: 1) device reflected (기기 반영)";
-  void persistRecord({ ...current }).catch((e) => { delete el.saveStatus.dataset.stage; el.saveStatus.textContent = `Save state: 4) sync failed (동기화 실패) — ${String(e)}`; });
+  el.saveStatus.textContent = "Save state: 1) device reflected";
+  void persistRecord({ ...current }).catch((e) => { delete el.saveStatus.dataset.stage; el.saveStatus.textContent = `Save state: 4) sync failed — ${String(e)}`; });
   renderReview(); renderRecords();
 });
 
